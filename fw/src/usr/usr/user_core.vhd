@@ -155,14 +155,19 @@ architecture usr of user_core is
     --===================================--
     -- Signal definition
     --===================================--
+    -- Clocks definition
     signal fabric_clk_pre_buf       : std_logic;                
     signal fabric_clk               : std_logic;
+    signal clk_320Mhz               : std_logic;
+    -- I2C Lines definition
+    signal i2c_hybrids_scl          : std_logic;
+    signal i2c_hybrids_sda          : std_logic;
     --===================================--
 
 begin
 
     --===========================================--
-    -- other clocks
+    -- 40Mhz clocks
     --===========================================--
     fclk_ibuf:      ibufgds     port map (i => fabric_clk_p, ib => fabric_clk_n, o => fabric_clk_pre_buf);
     fclk_bufg:      bufg        port map (i => fabric_clk_pre_buf,               o => fabric_clk);
@@ -184,27 +189,47 @@ begin
     --===================================--
     -- Block responsible for I2C command processing. Is connected to: fast command block, hybrids.
     --===================================--
-    command_processor_block: entity work.command_processor_core;
+    command_processor_block: entity work.command_processor_core
     --===================================--
     --generic map
     --(
     --)
-    --port map
-    --(
-    --);        
+    port map
+    (
+        clk             => fabric_clk,
+        reset           => '0',
+        ------
+        i2c_hybrids_scl => i2c_hybrids_scl,
+        i2c_hybrids_sda => i2c_hybrids_sda
+    );        
     --===================================--    
     
     --===================================--
     -- Fast commands. Connected to: physical interface, hybrids.
     --===================================--
-    fast_command_block: entity work.fast_command_core;
+    fast_command_block: entity work.fast_command_core
     --===================================--
-    --generic map
-    --(
-    --)
-    --port map
-    --(
-    --);        
+    generic map
+    (
+        NUM_HYBRIDS => NUM_HYBRIDS
+    )
+    port map
+    (
+        clk_40Mhz             => fabric_clk,
+        reset           => '0',
+        -- stubs from hybrids
+        in_stubs => (others => '0'),
+        -- commands from Command Prcoessor block
+        cp_command => (others => '0'),
+        -- number of triggers to accept, output trigger frequency divider, module(s) to accept stub from, ~ 67.1 million as a maximum should be enough
+        cp_data => (others => '0'),    
+        done => open,
+        failed => open,
+        -- 320Mhz clock   
+        clk_320MHz => clk_320MHz,
+        -- output trigger to Hybrids
+        trigger_out => open
+    );        
     --===================================-- 
     
     --===================================--
