@@ -158,6 +158,8 @@ architecture usr of user_core is
     -- Clocks definition
     signal fabric_clk_pre_buf       : std_logic;                
     signal fabric_clk               : std_logic;
+    signal clk_160Mhz               : std_logic;
+    signal clk_40Mhz                : std_logic;
     signal clk_320Mhz               : std_logic;
     -- I2C Lines definition
     signal i2c_hybrids_scl          : std_logic;
@@ -167,10 +169,13 @@ architecture usr of user_core is
 begin
 
     --===========================================--
-    -- 40Mhz clocks
+    -- LHC Strobe
     --===========================================--
     fclk_ibuf:      ibufgds     port map (i => fabric_clk_p, ib => fabric_clk_n, o => fabric_clk_pre_buf);
     fclk_bufg:      bufg        port map (i => fabric_clk_pre_buf,               o => fabric_clk);
+    
+    -- to be removed!!!
+    clk_160MHz <= fabric_clk;
     --===========================================--
 
     --===================================--
@@ -196,7 +201,7 @@ begin
     --)
     port map
     (
-        clk             => fabric_clk,
+        clk             => clk_160MHz,
         reset           => '0',
         ------
         i2c_hybrids_scl => i2c_hybrids_scl,
@@ -215,20 +220,20 @@ begin
     )
     port map
     (
-        clk_40Mhz             => fabric_clk,
-        reset           => '0',
+        clk_160Mhz              => clk_160MHz,
+        clk_40Mhz               => clk_40MHz,
+        clk_lhc                 => fabric_clk,
+        reset               => '0',
         -- stubs from hybrids
-        in_stubs => (others => '0'),
+        in_stubs                => (others => '0'),
         -- commands from Command Prcoessor block
-        cp_command => (others => '0'),
+        cp_command              => (others => '0'),
         -- number of triggers to accept, output trigger frequency divider, module(s) to accept stub from, ~ 67.1 million as a maximum should be enough
-        cp_data => (others => '0'),    
-        done => open,
-        failed => open,
-        -- 320Mhz clock   
-        clk_320MHz => clk_320MHz,
+        cp_data                 => (others => '0'),    
+        done                    => open,
+        failed                  => open,
         -- output trigger to Hybrids
-        trigger_out => open
+        trigger_out             => open
     );        
     --===================================-- 
     
