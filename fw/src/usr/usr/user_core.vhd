@@ -165,8 +165,27 @@ architecture usr of user_core is
     signal i2c_hybrids_scl          : std_logic;
     signal i2c_hybrids_sda          : std_logic;
     --===================================--
+    
+    --===================================--
+    -- IpBUS
+    --===================================--
+    signal ipb_clk					: std_logic;
+    signal ctrl_reg                 : array_32x32bit;
+    signal stat_reg                 : array_32x32bit;
 
 begin
+
+    --===========================================--
+	-- ipbus management
+	--===========================================--
+	ipb_clk 		      <= clk_31_250_bufg_i; 	-- select the frequency of the ipbus clock 
+	ipb_clk_o 	          <= ipb_clk;				-- always forward the selected ipb_clk to system core
+    --
+	ip_addr_o 	          <= x"c0_a8_01_50";
+	mac_addr_o	          <= x"aa_bb_cc_dd_ee_50";
+	rarp_en_o 		      <= '1';
+	use_i2c_eeprom_o      <= '1';
+	--===========================================--
 
     --===========================================--
     -- LHC Strobe
@@ -223,15 +242,17 @@ begin
         clk_160Mhz              => clk_160MHz,
         clk_40Mhz               => clk_40MHz,
         clk_lhc                 => fabric_clk,
-        reset               => '0',
+        reset                   => '0',
+        -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter, 22-1 - hybrid mask)
+        trigger_control_in      => ctrl_reg(0),
+        -- output trigger frequency divider
+        trigger_divider_in      => ctrl_reg(1),
+        -- number of triggers to accept
+        triggers_to_accept_in      => ctrl_reg(2),
         -- stubs from hybrids
         in_stubs                => (others => '0'),
-        -- commands from Command Prcoessor block
-        cp_command              => (others => '0'),
-        -- number of triggers to accept, output trigger frequency divider, module(s) to accept stub from, ~ 67.1 million as a maximum should be enough
-        cp_data                 => (others => '0'),    
-        done                    => open,
-        failed                  => open,
+        -- trigger status register output (31-28 - source, 27-24 - state, 23-20 - error code)
+        trigger_status_out      => stat_reg(0),
         -- output trigger to Hybrids
         trigger_out             => open
     );        
@@ -280,5 +301,32 @@ begin
     --);        
     --===================================--  
     
+    --===========================================--
+    stat_regs_inst: entity work.ipb_user_status_regs
+    --===========================================--
+    port map
+    (
+        clk                    => ipb_clk,
+        reset                => ipb_rst_i,
+        ipb_mosi_i            => ipb_mosi_i(user_ipb_stat_regs),
+        ipb_miso_o            => ipb_miso_o(user_ipb_stat_regs),
+        regs_i                => stat_reg
+    );
+    --===========================================--
+
+
+
+    --===========================================--
+    ctrl_regs_inst: entity work.ipb_user_control_regs
+    --===========================================--
+    port map
+    (
+        clk                    => ipb_clk,
+        reset                => ipb_rst_i,
+        ipb_mosi_i            => ipb_mosi_i(user_ipb_ctrl_regs),
+        ipb_miso_o            => ipb_miso_o(user_ipb_ctrl_regs),
+        regs_o                => ctrl_reg
+    );
+    --===========================================--
 
 end usr;

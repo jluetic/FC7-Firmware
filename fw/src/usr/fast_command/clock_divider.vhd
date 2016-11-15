@@ -27,15 +27,15 @@ entity clock_divider is
     port(
         i_clk         : in  std_logic;
         i_rst         : in  std_logic;
-        i_clk_divider : in  std_logic_vector(25 downto 0);
+        i_clk_divider : in  std_logic_vector(31 downto 0);
         o_clk         : out std_logic
     );
 end clock_divider;
 
 architecture rtl of clock_divider is
-    signal r_clk_counter        : unsigned(25 downto 0) := (others => '0');
-    signal r_clk_divider        : unsigned(25 downto 0);
-    signal r_clk_divider_half   : unsigned(25 downto 0);
+    signal r_clk_counter        : unsigned(31 downto 0) := (others => '0');
+    signal r_clk_divider        : unsigned(31 downto 0);
+    signal r_clk_divider_half   : unsigned(31 downto 0);
 begin
     p_clk_divider: process(i_rst,i_clk)
     begin
@@ -46,7 +46,7 @@ begin
             o_clk               <= '0';
         elsif(rising_edge(i_clk)) then
             r_clk_divider       <= unsigned(i_clk_divider)-1;
-            r_clk_divider_half  <= unsigned('0'&i_clk_divider(25 downto 1)); -- half
+            r_clk_divider_half  <= unsigned('0'&i_clk_divider(31 downto 1)); -- half
             
             if(r_clk_counter < r_clk_divider_half) then 
                 r_clk_counter   <= r_clk_counter + 1;

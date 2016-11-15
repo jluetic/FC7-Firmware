@@ -42,20 +42,21 @@ Generic (
   NUM_HYBRIDS           : integer := 1
 );
 Port (
-  clk_160MHz            : in std_logic;
-  clk_40MHz             : in std_logic;
-  clk_lhc               : in std_logic;
-  reset                 : in std_logic;
-  -- stubs from hybrids
-  in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
-  -- commands from Command Prcoessor block
-  cp_command            : in std_logic_vector(3 downto 0);
-  -- number of triggers to accept, output trigger frequency divider, module(s) to accept stub from, ~ 67.1 million as a maximum should be enough
-  cp_data               : in std_logic_vector(25 downto 0);    
-  done                  : out std_logic;
-  failed                : out std_logic;
-  -- output trigger to Hybrids
-  trigger_out           : out std_logic
+clk_160MHz            : in std_logic;
+clk_40MHz             : in std_logic;
+clk_lhc               : in std_logic;
+reset                 : in std_logic;
+-- trigger control register input
+trigger_control_in    : in std_logic_vector(31 downto 0);
+-- output trigger frequency divider
+trigger_divider_in    : in std_logic_vector(31 downto 0);
+-- number of triggers to accept
+triggers_to_accept_in       : in std_logic_vector(31 downto 0);
+-- stubs from hybrids
+in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
+-- trigger status register output
+-- output trigger to Hybrids
+trigger_out           : out std_logic
 );
 end component;
 
@@ -68,12 +69,14 @@ signal clk_160MHz : std_logic;
 signal clk_lhc : std_logic;
 signal NUM_HYBRIDS : integer := 1;
 signal in_stubs : std_logic_vector(NUM_HYBRIDS downto 1) := "0";
-signal cp_command : std_logic_vector(3 downto 0) := "0100";
-signal cp_data : std_logic_vector(25 downto 0) := "00000000000000000000000011"; 
+signal trigger_control_in : std_logic_vector(31 downto 0) := x"11_00_00_02";
+signal trigger_divider_in : std_logic_vector(31 downto 0) := x"00_00_00_04";
+signal triggers_to_accept_in : std_logic_vector(31 downto 0) := x"00_00_00_0A";
+
 begin
 
     UUT: fast_command_core generic map (NUM_HYBRIDS)
-    port map(clk_160MHz, clk_40MHz, clk_lhc, '0', in_stubs, cp_command, cp_data, open, open, open);
+    port map(clk_160MHz, clk_40MHz, clk_lhc, '0', trigger_control_in, trigger_divider_in, triggers_to_accept_in, in_stubs, open);
     
     clk40_process: process
     begin
@@ -101,12 +104,16 @@ begin
 
     restart_process: process
     begin
-        cp_command(2 downto 0) <= "001";
-        cp_command(3) <= not cp_command(3);
-        wait for 100 ns;
-        --cp_command(2 downto 0) <= "100";
-        --cp_command(3) <= not cp_command(3);
-        wait for 1000 ns;
+        trigger_control_in <= x"11_00_00_02";        
+        wait for 500 ns;
+        trigger_control_in <= x"21_00_00_02";        
+        wait for 500 ns;
+        trigger_control_in <= x"31_00_00_02";        
+        wait for 500 ns;
+        trigger_control_in <= x"12_00_00_02";
+        wait for 20 ns;
+        trigger_control_in(23) <= not trigger_control_in(23);        
+        wait for 500 ns;
     end process;
 
 end Behavioral;
