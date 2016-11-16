@@ -39,21 +39,25 @@ architecture Behavioral of sim_command_processor_core is
 
 component command_processor_core
   Port ( 
-    clk             : in std_logic;
-    reset           : in std_logic;
-    
-    ------
-    i2c_hybrids_scl  : inout std_logic;
-    i2c_hybrids_sda  : inout std_logic
+  clk             : in std_logic;
+  reset           : in std_logic;    
+  -- command from IpBus
+  command_in      : in std_logic_vector(31 downto 0);
+  -- should be output command register
+  command_out     : out std_logic_vector(31 downto 0);
+  -- status back using IpBus
+  status_out      : out std_logic_vector(31 downto 0)
   );
 end component;
 
 constant clk40_period : time := 25 ns;
-signal i2c_hybrids_scl,i2c_hybrids_sda : std_logic;
 signal clk : std_logic;
+signal command_in : std_logic_vector(31 downto 0) := x"00_00_00_00";
+signal status_out : std_logic_vector(31 downto 0);
+
 begin
 
-    UUT: command_processor_core port map(clk, '0', i2c_hybrids_scl,i2c_hybrids_sda);
+    UUT: command_processor_core port map(clk, '0', command_in,open,status_out);
     
     clk40_process: process
     begin
@@ -62,6 +66,17 @@ begin
         clk <= '0';
         wait for clk40_period/2;
     end process;
-
+    
+    commands_process: process
+    begin
+        command_in <= x"00_00_00_00";
+        wait for 200 ns;
+        command_in <= "000001" & "00" & x"00_00_00";
+        wait for 200 ns;
+        command_in <= "000010" & "00" & x"00_00_00";
+        wait for 200 ns;
+        command_in <= "000011" & "00" & x"00_00_00";
+        wait for 200 ns;
+    end process;
 
 end Behavioral;

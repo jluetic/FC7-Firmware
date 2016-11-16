@@ -36,10 +36,12 @@ entity command_processor_core is
   Port ( 
     clk             : in std_logic;
     reset           : in std_logic;    
-    ------
-    i2c_hybrids_scl  : inout std_logic;
-    i2c_hybrids_sda  : inout std_logic
-
+    -- command from IpBus
+    command_in      : in std_logic_vector(31 downto 0);
+    -- should be output command register
+    command_out     : out std_logic_vector(31 downto 0);
+    -- status back using IpBus
+    status_out      : out std_logic_vector(31 downto 0)
   );
 end command_processor_core;
 
@@ -48,200 +50,85 @@ architecture rtl of command_processor_core is
     --==========================--
     -- signal definition
     --==========================--
-    signal enable_i2c             : std_logic := '0';
-    -- bus 000 with hybrids
-    signal bus_select             : std_logic_vector(2 downto 0) := "000";
-    signal cmd                    : std_logic_vector(31 downto 0) := (others => '0');
-    signal reply                  : std_logic_vector(31 downto 0) := (others => '0');
-    signal execute_strobe         : std_logic := '0';
-    -- hybrid_id, addresses are in i2c_hybrid_constants_pack
-    signal hybrid_id              : integer range 1 to 16 := 1;
-    -- register_address, refer predefined addresses from i2c_hybrid_constants_pack
-    signal register_address       : std_logic_vector(7 downto 0) := (others => '0');
-    signal data_to_hybrid         : std_logic_vector(7 downto 0) := (others => '0');    
-    signal data_from_hybrid       : std_logic_vector(7 downto 0) := (others => '0');
+    -- command type
+    signal command_type           : std_logic_vector(5 downto 0);
+    -- hybrid_id
+    signal hybrid_id              : std_logic_vector(5 downto 0);
+    -- cbc on hybrid id
+    signal cbc_id                 : std_logic_vector(3 downto 0);
+    -- register_address
+    signal register_address       : std_logic_vector(7 downto 0);
+    signal data_to_hybrid         : std_logic_vector(7 downto 0);    
     --==========================--
     
     --==========================--
     -- processor fsm definition
     --==========================--
-    type type_processor_fsm_state is (Initial, GetThreshold, ReplyGetThreshold, SetThreshold, ReplySetThreshold, Failed);
-    signal processor_fsm_state    : type_processor_fsm_state := Initial;
+    type type_processor_fsm_state is (Idle, SendCommand, WaitForResponse, SetStatus);
+    signal processor_fsm_state    : type_processor_fsm_state := Idle;
+    signal start_sending          : std_logic := '0';
+    signal start_sending_loc      : std_logic := '0';
     --==========================--
     
-    --==========================--
-    -- i2c fsm definition
-    --==========================--
-    signal i2c_read               : std_logic := '0';
-    signal i2c_write              : std_logic := '0';
-    signal i2c_read_loc           : std_logic := '0';
-    signal i2c_write_loc          : std_logic := '0';
-    -- started to send i2c command
-    signal started_sending        : std_logic := '0';
-    -- operation failed
-    signal operation_failed       : std_logic := '0';
-    -- sending done
-    signal done                   : std_logic := '0';
-    type type_i2c_fsm_state is (Idle, SendRead, PostSendRead, WaitReadReply, SendWrite, PostSendWrite, WaitWriteReply, Failed);
-    signal i2c_fsm_state          : type_i2c_fsm_state := Idle;
-    --==========================--
-
+    -- statuses
+    signal status_command         : std_logic_vector(3 downto 0) := x"0";
+    signal status_error           : std_logic_vector(3 downto 0) := x"0";   
+    
 begin
 
-    done <= reply(26);
-
---===================================--
-i2c_master: entity work.i2c_master_top
---===================================--
-generic map (nbr_of_busses => 1)
-port map
-(
-    clk               => clk,
-    reset             => reset,
-    ------------------
-    id_o              => open, -- read only, bus owner 8 bits
-    id_i              => (others => '0'), -- bus owner 8 bits
-    enable            => enable_i2c,
-    bus_select        => bus_select,
-    prescaler         => "1100000000", -- 10 bits
-    command           => execute_strobe & cmd(30 downto 0), -- here command (32 bits)
-    reply             => reply, --
-    ------------------
-    scl_io(0)         => i2c_hybrids_scl,            
-    sda_io(0)         => i2c_hybrids_sda
-);             
---===================================--
+    command_type    <= command_in(31 downto 26);
+    hybrid_id       <= command_in(25 downto 20);
+    cbc_id          <= command_in(19 downto 16);
+    register_address <= command_in(15 downto 8);
+    data_to_hybrid  <= command_in(7 downto 0);
+    
+    -- statuses
+    status_out(31 downto 28) <= status_command;
+    status_out(27 downto 24) <= status_error;
+    status_out(23 downto 0) <= (others => '0');
+        
+process(command_in)
+begin
+    if processor_fsm_state = Idle then
+        start_sending <= not start_sending;
+    else
+        status_error <= x"d";
+    end if;
+end process;
 
 PROCESSOR_FSM: process(clk)
 begin
     if rising_edge(clk) then
-        if reset = '1' then
-            processor_fsm_state <= Initial;            
-        end if;
-        case processor_fsm_state is
-            when Initial =>
-                processor_fsm_state <= GetThreshold;                   
-            when GetThreshold =>
-                hybrid_id <= 1;
-                register_address <= REGISTER_VCth;
-                i2c_read <= not i2c_read;
-                processor_fsm_state <= ReplyGetThreshold;
-            when ReplyGetThreshold =>
-                if(i2c_fsm_state = Idle and started_sending = '1') then
-                    if(operation_failed = '1') then
-                        processor_fsm_state <= Failed;
-                    else
-                        processor_fsm_state <= SetThreshold;
-                    end if;
-                end if;
-            when SetThreshold =>
-                data_to_hybrid <= std_logic_vector(to_unsigned(TO_INTEGER(unsigned(data_from_hybrid)) + 1, 8));
-                hybrid_id <= 1;
-                register_address <= REGISTER_VCth;
-                i2c_write <= not i2c_write;
-                processor_fsm_state <= ReplySetThreshold;                
-            when ReplySetThreshold =>
-                if(i2c_fsm_state = Idle and started_sending = '1') then
-                    if(operation_failed = '1') then
-                        processor_fsm_state <= Failed;
-                    else
-                        processor_fsm_state <= Initial;
-                    end if;
-                end if;
-            when Failed =>
-                processor_fsm_state <= Initial;
-            when others =>
-                processor_fsm_state <= Initial;
-        end case;                   
-    end if;
-end process;
-
-I2C_FSM: process(clk)
-begin
-    if rising_edge(clk) then
-        if reset = '1' then
-            enable_i2c <= '0';
-            i2c_fsm_state <= Idle;
-            i2c_read_loc <= i2c_read;
-            i2c_write_loc <= i2c_write;
-        end if;
-        case i2c_fsm_state is
-            when Idle =>
-                enable_i2c <= '0';
-                if i2c_read /= i2c_read_loc then
-                    i2c_fsm_state <= SendRead;
-                    i2c_read_loc <= i2c_read;
-                end if;
-                if i2c_write /= i2c_write_loc then
-                    i2c_fsm_state <= SendWrite;
-                    i2c_write_loc <= i2c_write;
-                end if;
-            when SendRead =>
-                enable_i2c <= '1';
-                execute_strobe <= '1';
-                started_sending <= '1';
-                -- extended mode (2 bytes of data), has to be off for hybrids(0)
-                cmd(25) <= '0';
-                -- i2c mode with registers
-                cmd(24) <= '1';
-                -- rw_bit: write = 1, read = 0
-                cmd(23) <= '0';
-                -- chip address
-                cmd(22 downto 16) <= hybrid_address(hybrid_id);
-                cmd(15 downto 8) <= register_address;
-                i2c_fsm_state <= PostSendRead;
-            when PostSendRead =>
-                execute_strobe <= '0';
-                if(done = '0') then  
-                    i2c_fsm_state <= WaitReadReply;
-                end if;
-            when WaitReadReply =>
-                started_sending <= '0';
-                if(done = '1') then
-                    -- check for errors
-                    if(reply(27) = '0') then
-                        data_from_hybrid <= reply(7 downto 0);
-                        i2c_fsm_state <= Idle;
-                    else
-                        i2c_fsm_state <= Failed;
-                    end if;
-                end if;
-	        when SendWrite =>
-                enable_i2c <= '1';
-                execute_strobe <= '1';
-                started_sending <= '1';
-                -- extended mode (2 bytes of data), has to be off for hybrids(0)
-                cmd(25) <= '0';
-                -- i2c mode with registers
-                cmd(24) <= '1';
-                -- rw_bit: write = 1, read = 0
-                cmd(23) <= '1';
-                -- chip address
-                cmd(22 downto 16) <= hybrid_address(hybrid_id);
-                cmd(15 downto 8) <= register_address;
-                cmd(7 downto 0) <= data_to_hybrid;
-                i2c_fsm_state <= PostSendWrite;
-            when PostSendWrite =>
-                execute_strobe <= '0';
-                if(done = '0') then  
-                    i2c_fsm_state <= WaitWriteReply;
-                end if;
-            when WaitWriteReply =>
-                started_sending <= '0';
-                if(done = '1') then
-                    -- check for errors
-                    if(reply(27) = '0') then
-                        i2c_fsm_state <= Idle;
-                    else
-                        i2c_fsm_state <= Failed;
-                    end if;
-                end if;	
-            when Failed =>
-                operation_failed <= '1';
-                i2c_fsm_state <= Idle;
-            when others =>
-                i2c_fsm_state <= Idle;                
-        end case;
+    case processor_fsm_state is
+        when Idle =>
+            if start_sending /= start_sending_loc then
+                start_sending_loc <= start_sending;
+                processor_fsm_state <= SendCommand;
+            end if;
+        when SendCommand =>
+            -- will send command to hybrids here
+            case command_type is
+                -- setting register value to a certain hybrid,cbc
+                when "000001" =>
+                    status_command <= x"1";
+                -- setting register value to all CBCs within a certain hybrid
+                when "000010" =>
+                    status_command <= x"2";
+                -- setting register value to all CBCs all Hybrids
+                when "000011" =>
+                    status_command <= x"3";
+                when others =>
+                    status_command <= x"f";                    
+            end case;
+            processor_fsm_state <= WaitForResponse; 
+        when WaitForResponse =>
+            -- will wait for response from module here
+            processor_fsm_state <= SetStatus;
+        when SetStatus =>
+            processor_fsm_state <= Idle;
+        when others =>
+            processor_fsm_state <= Idle;
+    end case;
     end if;
 end process;
 

@@ -231,9 +231,12 @@ begin
     (
         clk             => clk_160MHz,
         reset           => '0',
-        ------
-        i2c_hybrids_scl => i2c_hybrids_scl,
-        i2c_hybrids_sda => i2c_hybrids_sda
+        -- command from IpBus
+        command_in      => ctrl_reg(3),
+        -- should be output command register
+        command_out     => open,
+        -- status back using IpBus
+        status_out      => stat_reg(1)
     );        
     --===================================--    
     
