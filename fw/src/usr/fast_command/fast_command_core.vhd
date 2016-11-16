@@ -29,8 +29,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library UNISIM;
+use UNISIM.VComponents.all;
 
 entity fast_command_core is
   Generic (
@@ -58,13 +58,18 @@ end fast_command_core;
 
 architecture rtl of fast_command_core is
 
-    signal trigger_i                : std_logic := '0';
+    signal trigger_i                : std_logic;
+    signal ClkOutputMuxA            : std_logic;
+    signal ClkOutputMuxB            : std_logic;
+    signal clock_enable             : std_logic := '0';
     signal hybrid_mask_inv          : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '0');
     signal ones_mask                : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
     
     signal trigger_source           : std_logic_vector(3 downto 0);
     signal trigger_state            : std_logic_vector(3 downto 0);
     signal user_trigger             : std_logic;
+    signal user_trigger_selector             : std_logic;
+    signal stubs_trigger            : std_logic;
     -- accept N triggers related signals
     signal counter                  : std_logic_vector(31 downto 0) := (others => '0');
     signal reset_counter            : std_logic := trigger_control_in(23);
@@ -82,6 +87,8 @@ begin
     trigger_state <= trigger_control_in(27 downto 24);
     reset_counter <= trigger_control_in(23);
     hybrid_mask_inv <= not trigger_control_in(NUM_HYBRIDS downto 1);
+    stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
+    user_trigger_selector <= '1' when TO_INTEGER(unsigned(trigger_divider_in)) > 1 else '0';
     
     -- status
     trigger_status_out(31 downto 28) <= status_source;
@@ -101,39 +108,93 @@ port map
 );             
 --===================================--
 
-process (trigger_source, clk_160MHz, clk_40MHz, user_trigger, clk_lhc)
+--===================================--
+BufGCtrlMuxA_l : BUFGCTRL  
+--===================================--
+generic map (  
+  INIT_OUT     => 0,  
+  PRESELECT_I0 => FALSE,  
+  PRESELECT_I1 => FALSE)  
+port map (  
+  O       => ClkOutputMuxA,  
+  CE0     => '1',  
+  CE1     => '1',  
+  I0      => clk_40MHz,  
+  I1      => user_trigger,  
+  IGNORE0 => '1',  
+  IGNORE1 => '1',  
+  S0      => not user_trigger_selector, -- Clock select0 input  
+  S1      => user_trigger_selector -- Clock select1 input  
+);
+--===================================--
+
+--===================================--
+BufGCtrlMuxB_l : BUFGCTRL  
+--===================================--
+generic map (  
+  INIT_OUT     => 0,  
+  PRESELECT_I0 => FALSE,  
+  PRESELECT_I1 => FALSE)  
+port map (  
+  O       => ClkOutputMuxB,  
+  CE0     => '1',  
+  CE1     => '1',  
+  I0      => stubs_trigger,  
+  I1      => ClkOutputMuxA,  
+  IGNORE0 => '1',  
+  IGNORE1 => '1',  
+  S0      => not trigger_source(0), -- Clock select0 input  
+  S1      => trigger_source(0) -- Clock select1 input  
+);
+--===================================--
+
+--===================================--
+BufGCtrlMuxC_l : BUFGCTRL  
+--===================================--
+generic map (  
+  INIT_OUT     => 0,  
+  PRESELECT_I0 => FALSE,  
+  PRESELECT_I1 => FALSE)  
+port map (  
+  O       => trigger_i,  
+  CE0     => '1',  
+  CE1     => '1',  
+  I0      => clk_lhc,  
+  I1      => ClkOutputMuxB,  
+  IGNORE0 => '1',  
+  IGNORE1 => '1',  
+  S0      => not trigger_source(1), -- Clock select0 input  
+  S1      => trigger_source(1) -- Clock select1 input  
+);
+--===================================--
+
+--===================================--
+BufGCE_Out : BUFGCE
+--===================================--
+port map (
+    I   => trigger_i,
+    O   => trigger_out,
+    CE  => clock_enable
+);
+--===================================--
+
+process (trigger_source)
 begin
     if reset <= '1' then
         status_source <= "0000";
     end if;
     case trigger_source is
-        -- no triggers
-        when "0000" =>
-            trigger_i <= '0';
-            status_source <= "0000";
         -- spread LHC clock as trigger
         when "0001" =>
-            trigger_i <= clk_lhc;
             status_source <= "0001";
         -- triggers using stubs from the hybrids, could be coincidence
         when "0010" =>
-            if ones_mask = (hybrid_mask_inv XOR in_stubs) then
-                trigger_i <= '1';
-            else
-                trigger_i <= '0';
-            end if;
             status_source <= "0010";
         -- trigger with defined user frequency <= 40MHz
         when "0011" =>
-            if trigger_divider_in = "00000000000000000000000000000001" then
-                trigger_i <= clk_40MHz;
-            else
-                trigger_i <= user_trigger;
-            end if;
             status_source <= "0011";
         -- no triggers
         when others =>
-            trigger_i <= '0';
             status_source <= "0000";
     end case;            
 end process;
@@ -148,26 +209,26 @@ begin
     case trigger_state is
         -- Idle
         when "0000" =>
-            trigger_out <= '0';
+            clock_enable <= '0';
             status_state <= "0000";
         -- Continuous Triggering
         when "0001" =>
-            trigger_out <= trigger_i;
+            clock_enable <= '1';
             status_state <= "0001";
         -- Accept N Triggers, then stop    
         when "0010" =>            
             if TO_INTEGER(unsigned(counter)) < TO_INTEGER(unsigned(triggers_to_accept_in)) then
-                trigger_out <= trigger_i;
+                clock_enable <= '1';
                 if rising_edge(trigger_i) then
                     counter <= counter + 1;
                     status_state <= "0010";
                 end if;
             else
-                trigger_out <= '0';
+                clock_enable <= '0';
                 status_state <= "0011";
             end if;
         when others =>
-            trigger_out <= '0';
+            clock_enable <= '0';
             status_state <= "0000";            
     end case;
 end process;

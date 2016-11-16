@@ -10,11 +10,11 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="4600000000fs"></ZoomStartTime>
-      <ZoomEndTime time="7480000001fs"></ZoomEndTime>
-      <Cursor1Time time="7065000000fs"></Cursor1Time>
+      <ZoomStartTime time="9156333334fs"></ZoomStartTime>
+      <ZoomEndTime time="10168333335fs"></ZoomEndTime>
+      <Cursor1Time time="9450000000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="14" />
+   <WVObjectSize size="12" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
@@ -30,18 +30,6 @@
    <wvobject type="array" fp_name="/sim_fast_command_core/in_stubs">
       <obj_property name="ElementShortName">in_stubs[1:1]</obj_property>
       <obj_property name="ObjectShortName">in_stubs[1:1]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/trigger_control_in">
-      <obj_property name="ElementShortName">trigger_control_in[31:0]</obj_property>
-      <obj_property name="ObjectShortName">trigger_control_in[31:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/trigger_divider_in">
-      <obj_property name="ElementShortName">trigger_divider_in[31:0]</obj_property>
-      <obj_property name="ObjectShortName">trigger_divider_in[31:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/triggers_to_accept_in">
-      <obj_property name="ElementShortName">triggers_to_accept_in[31:0]</obj_property>
-      <obj_property name="ObjectShortName">triggers_to_accept_in[31:0]</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/trigger_i">
       <obj_property name="ElementShortName">trigger_i</obj_property>
@@ -70,5 +58,9 @@
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/status_error">
       <obj_property name="ElementShortName">status_error[3:0]</obj_property>
       <obj_property name="ObjectShortName">status_error[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_source">
+      <obj_property name="ElementShortName">trigger_source[3:0]</obj_property>
+      <obj_property name="ObjectShortName">trigger_source[3:0]</obj_property>
    </wvobject>
 </wave_config>

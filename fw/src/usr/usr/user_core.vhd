@@ -172,6 +172,15 @@ architecture usr of user_core is
     signal ipb_clk					: std_logic;
     signal ctrl_reg                 : array_32x32bit;
     signal stat_reg                 : array_32x32bit;
+    
+    --===================================--
+    -- Trigger Signal from Fast Command Block
+    --===================================--
+    signal trigger_out              : std_logic;
+    --===================================--
+    -- Stubs From Hybrids
+    --===================================--
+    signal hybrid_stubs             : std_logic_vector(NUM_HYBRIDS downto 1);
 
 begin
 
@@ -248,13 +257,13 @@ begin
         -- output trigger frequency divider
         trigger_divider_in      => ctrl_reg(1),
         -- number of triggers to accept
-        triggers_to_accept_in      => ctrl_reg(2),
+        triggers_to_accept_in   => ctrl_reg(2),
         -- stubs from hybrids
-        in_stubs                => (others => '0'),
+        in_stubs                => hybrid_stubs,
         -- trigger status register output (31-28 - source, 27-24 - state, 23-20 - error code)
         trigger_status_out      => stat_reg(0),
         -- output trigger to Hybrids
-        trigger_out             => open
+        trigger_out             => trigger_out
     );        
     --===================================-- 
     
