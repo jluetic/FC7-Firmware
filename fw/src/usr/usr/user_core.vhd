@@ -8,6 +8,7 @@ use work.system_package.all;
 --! user packages
 use work.user_package.all;
 use work.user_version_package.all;
+use work.cmdbus.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -150,6 +151,7 @@ architecture usr of user_core is
     -- Constant definition
     --===================================--
     constant NUM_HYBRIDS            : integer := 1;
+    constant NUM_CHIPS            : integer := 1;
     --===================================--
     
     --===================================--
@@ -160,26 +162,22 @@ architecture usr of user_core is
     signal fabric_clk               : std_logic;
     signal clk_160Mhz               : std_logic;
     signal clk_40Mhz                : std_logic;
+    signal clk_40Mhz_nobuf                : std_logic;
     signal clk_320Mhz               : std_logic;
-    -- I2C Lines definition
-    signal i2c_hybrids_scl          : std_logic;
-    signal i2c_hybrids_sda          : std_logic;
-    --===================================--
     
-    --===================================--
-    -- IpBUS
-    --===================================--
+    -- IPbus
     signal ipb_clk					: std_logic;
     signal ctrl_reg                 : array_32x32bit;
     signal stat_reg                 : array_32x32bit;
     
-    --===================================--
+    -- I2C command lines from Fast Command Block to PHY and back
+    signal i2c_request              : cmd_wbus;
+    signal i2c_reply                : cmd_rbus;
+    
     -- Trigger Signal from Fast Command Block
-    --===================================--
     signal trigger_out              : std_logic;
-    --===================================--
+    
     -- Stubs From Hybrids
-    --===================================--
     signal hybrid_stubs             : std_logic_vector(NUM_HYBRIDS downto 1);
 
 begin
@@ -202,8 +200,23 @@ begin
     fclk_ibuf:      ibufgds     port map (i => fabric_clk_p, ib => fabric_clk_n, o => fabric_clk_pre_buf);
     fclk_bufg:      bufg        port map (i => fabric_clk_pre_buf,               o => fabric_clk);
     
-    -- to be removed!!!
-    clk_160MHz <= fabric_clk;
+    clk_40MHz <= fabric_clk;
+    --===========================================--
+    -- CLK 40MHz
+    --===========================================--
+--    cdceOut0Ibufds2Gtxe2: ibufds_gte2
+--          port map (
+--             O                                           => clk_40Mhz_nobuf,--cdce out U1 LHC CLK freq
+--             ODIV2                                       => open,
+--             CEB                                         => '0',
+--             I                                           => ttc_mgt_xpoint_b_p,
+--             IB                                          => ttc_mgt_xpoint_b_n
+--             );
+--    cdceOut1Bufg: bufg
+--          port map (
+--             O                                           => clk_40Mhz, 
+--             I                                           => clk_40Mhz_nobuf
+--             );
     --===========================================--
 
     --===================================--
@@ -224,17 +237,20 @@ begin
     --===================================--
     command_processor_block: entity work.command_processor_core
     --===================================--
-    --generic map
-    --(
-    --)
+    generic map
+        (
+            NUM_HYBRIDS => NUM_HYBRIDS,
+            NUM_CHIPS   => NUM_CHIPS
+        )
     port map
     (
-        clk             => clk_160MHz,
-        reset           => '0',
+        clk             => clk_40MHz,
+        reset           => ctrl_reg(3)(31),
         -- command from IpBus
         command_in      => ctrl_reg(3),
         -- should be output command register
-        command_out     => open,
+        i2c_request     => i2c_request,
+        i2c_reply       => i2c_reply,
         -- status back using IpBus
         status_out      => stat_reg(1)
     );        
@@ -251,9 +267,8 @@ begin
     )
     port map
     (
-        clk_160Mhz              => clk_160MHz,
         clk_40Mhz               => clk_40MHz,
-        clk_lhc                 => fabric_clk,
+        clk_lhc                 => '0',
         reset                   => '0',
         -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter, 22-1 - hybrid mask)
         trigger_control_in      => ctrl_reg(0),

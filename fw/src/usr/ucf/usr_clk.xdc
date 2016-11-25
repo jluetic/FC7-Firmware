@@ -14,3 +14,6 @@ set_property BITSTREAM.CONFIG.OVERTEMPPOWERDOWN ENABLE [current_design]
 set_operating_conditions -airflow 0
 set_operating_conditions -heatsink low
 ########################################################
+set_property PACKAGE_PIN AA8                   [get_ports ttc_mgt_xpoint_b_p]
+set_property PACKAGE_PIN AA7                   [get_ports ttc_mgt_xpoint_b_n]
+create_clock -period 24.000 -name ttc_mgt_xpoint_b      [get_ports ttc_mgt_xpoint_b_p]

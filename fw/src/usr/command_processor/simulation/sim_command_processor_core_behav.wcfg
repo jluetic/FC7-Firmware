@@ -5,17 +5,17 @@
    <db_ref_list>
       <db_ref path="sim_command_processor_core_behav.wdb" id="1">
          <top_modules>
-            <top_module name="i2c_hybrid_constants_pack" />
+            <top_module name="cmdbus" />
             <top_module name="sim_command_processor_core" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="34230000fs"></ZoomStartTime>
-      <ZoomEndTime time="694230001fs"></ZoomEndTime>
-      <Cursor1Time time="225000000fs"></Cursor1Time>
+      <ZoomStartTime time="449999999fs"></ZoomStartTime>
+      <ZoomEndTime time="1110000001fs"></ZoomEndTime>
+      <Cursor1Time time="1000000000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="6" />
+   <WVObjectSize size="7" />
    <wvobject type="other" fp_name="/sim_command_processor_core/UUT/processor_fsm_state">
       <obj_property name="ElementShortName">processor_fsm_state</obj_property>
       <obj_property name="ObjectShortName">processor_fsm_state</obj_property>
@@ -23,10 +23,6 @@
    <wvobject type="logic" fp_name="/sim_command_processor_core/clk">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_command_processor_core/command_in">
-      <obj_property name="ElementShortName">command_in[31:0]</obj_property>
-      <obj_property name="ObjectShortName">command_in[31:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/sim_command_processor_core/UUT/status_command">
       <obj_property name="ElementShortName">status_command[3:0]</obj_property>
@@ -39,5 +35,14 @@
    <wvobject type="logic" fp_name="/sim_command_processor_core/UUT/start_sending">
       <obj_property name="ElementShortName">start_sending</obj_property>
       <obj_property name="ObjectShortName">start_sending</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/UUT/i2c_request">
+      <obj_property name="ElementShortName">i2c_request</obj_property>
+      <obj_property name="ObjectShortName">i2c_request</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/UUT/command_type">
+      <obj_property name="ElementShortName">command_type[4:0]</obj_property>
+      <obj_property name="ObjectShortName">command_type[4:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
 </wave_config>

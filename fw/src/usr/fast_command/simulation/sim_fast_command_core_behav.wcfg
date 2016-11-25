@@ -10,18 +10,14 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="9156333334fs"></ZoomStartTime>
-      <ZoomEndTime time="10168333335fs"></ZoomEndTime>
-      <Cursor1Time time="9450000000fs"></Cursor1Time>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="1226000001fs"></ZoomEndTime>
+      <Cursor1Time time="1052000000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="12" />
+   <WVObjectSize size="13" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/clk_160MHz">
-      <obj_property name="ElementShortName">clk_160MHz</obj_property>
-      <obj_property name="ObjectShortName">clk_160MHz</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_lhc">
       <obj_property name="ElementShortName">clk_lhc</obj_property>
@@ -43,6 +39,10 @@
       <obj_property name="ElementShortName">counter[31:0]</obj_property>
       <obj_property name="ObjectShortName">counter[31:0]</obj_property>
    </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/counter_prev">
+      <obj_property name="ElementShortName">counter_prev[31:0]</obj_property>
+      <obj_property name="ObjectShortName">counter_prev[31:0]</obj_property>
+   </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/hybrid_mask_inv">
       <obj_property name="ElementShortName">hybrid_mask_inv[1:1]</obj_property>
       <obj_property name="ObjectShortName">hybrid_mask_inv[1:1]</obj_property>
@@ -62,5 +62,9 @@
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_source">
       <obj_property name="ElementShortName">trigger_source[3:0]</obj_property>
       <obj_property name="ObjectShortName">trigger_source[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_checker">
+      <obj_property name="ElementShortName">trigger_checker[31:0]</obj_property>
+      <obj_property name="ObjectShortName">trigger_checker[31:0]</obj_property>
    </wvobject>
 </wave_config>

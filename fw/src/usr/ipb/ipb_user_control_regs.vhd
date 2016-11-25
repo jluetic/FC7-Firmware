@@ -51,9 +51,13 @@ begin
 	elsif rising_edge(clk) then
 		-- write
 		if ipb_mosi_i.ipb_strobe='1' and ipb_mosi_i.ipb_write='1' then
-		        if (sel = 0) and (ipb_mosi_i.ipb_wdata(23) = '1')  then
+		        if (sel = 0) then
 		            regs(sel)(31 downto 24) <= ipb_mosi_i.ipb_wdata(31 downto 24);
-		            regs(sel)(23) <= not regs(sel)(23);
+		            if (ipb_mosi_i.ipb_wdata(23) = '1') then
+		              regs(sel)(23) <= not regs(sel)(23);
+		            else
+		              regs(sel)(23) <= regs(sel)(23);
+		            end if;
 		            regs(sel)(22 downto 0) <= ipb_mosi_i.ipb_wdata(22 downto 0);
 		        else
 				    regs(sel) <= ipb_mosi_i.ipb_wdata;

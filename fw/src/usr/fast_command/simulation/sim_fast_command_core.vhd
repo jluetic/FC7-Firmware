@@ -42,7 +42,6 @@ Generic (
   NUM_HYBRIDS           : integer := 1
 );
 Port (
-clk_160MHz            : in std_logic;
 clk_40MHz             : in std_logic;
 clk_lhc               : in std_logic;
 reset                 : in std_logic;
@@ -65,7 +64,6 @@ constant clk160_period : time := 6.25 ns;
 constant clk_lhc_period : time := 23 ns;
 
 signal clk_40MHz : std_logic;
-signal clk_160MHz : std_logic;
 signal clk_lhc : std_logic;
 signal NUM_HYBRIDS : integer := 1;
 signal in_stubs : std_logic_vector(NUM_HYBRIDS downto 1) := "0";
@@ -76,7 +74,7 @@ signal triggers_to_accept_in : std_logic_vector(31 downto 0) := x"00_00_00_0A";
 begin
 
     UUT: fast_command_core generic map (NUM_HYBRIDS)
-    port map(clk_160MHz, clk_40MHz, clk_lhc, '0', trigger_control_in, trigger_divider_in, triggers_to_accept_in, in_stubs, open);
+    port map(clk_40MHz, clk_lhc, '0', trigger_control_in, trigger_divider_in, triggers_to_accept_in, in_stubs, open);
     
     clk40_process: process
     begin
@@ -84,14 +82,6 @@ begin
         wait for clk40_period/2;
         clk_40MHz <= '0';
         wait for clk40_period/2;
-    end process;
-    
-    clk160_process: process
-    begin
-        clk_160MHz <= '1';
-        wait for clk160_period/2;
-        clk_160MHz <= '0';
-        wait for clk160_period/2;
     end process;
        
     clk_lhc_process: process

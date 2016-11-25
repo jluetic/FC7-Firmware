@@ -21,6 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use work.cmdbus.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -38,13 +39,18 @@ end sim_command_processor_core;
 architecture Behavioral of sim_command_processor_core is
 
 component command_processor_core
+  Generic (
+  NUM_HYBRIDS     : integer := 1;
+  NUM_CHIPS       : integer := 1
+  );
   Port ( 
   clk             : in std_logic;
   reset           : in std_logic;    
   -- command from IpBus
   command_in      : in std_logic_vector(31 downto 0);
-  -- should be output command register
-  command_out     : out std_logic_vector(31 downto 0);
+  -- output command
+  i2c_request     : out cmd_wbus;
+  i2c_reply       : in cmd_rbus;
   -- status back using IpBus
   status_out      : out std_logic_vector(31 downto 0)
   );
@@ -54,10 +60,13 @@ constant clk40_period : time := 25 ns;
 signal clk : std_logic;
 signal command_in : std_logic_vector(31 downto 0) := x"00_00_00_00";
 signal status_out : std_logic_vector(31 downto 0);
+signal i2c_request              : cmd_wbus;
+signal i2c_reply                : cmd_rbus;
 
 begin
 
-    UUT: command_processor_core port map(clk, '0', command_in,open,status_out);
+    UUT: command_processor_core generic map (4,2)
+    port map(clk, '0', command_in,i2c_request,i2c_reply,status_out);
     
     clk40_process: process
     begin
@@ -71,12 +80,12 @@ begin
     begin
         command_in <= x"00_00_00_00";
         wait for 200 ns;
-        command_in <= "000001" & "00" & x"00_00_00";
+        command_in <= "00001" & "00111" & x"8" & "00" & x"00_00";
         wait for 200 ns;
-        command_in <= "000010" & "00" & x"00_00_00";
-        wait for 200 ns;
-        command_in <= "000011" & "00" & x"00_00_00";
-        wait for 200 ns;
+        command_in <= "00010" & "00111" & x"8" & "00" & x"00_00";
+        wait for 2000 ns;
+        command_in <= "00011" & "00111" & x"8" & "00" & x"00_00";
+        wait for 2000 ns;
     end process;
 
 end Behavioral;
