@@ -40,12 +40,14 @@ entity fast_command_core is
     clk_40MHz             : in std_logic;
     clk_lhc               : in std_logic;
     reset                 : in std_logic;
-    -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter, 22-1 - hybrid mask)
+    -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter)
     trigger_control_in    : in std_logic_vector(31 downto 0);
     -- output trigger frequency divider
     trigger_divider_in    : in std_logic_vector(31 downto 0);
     -- number of triggers to accept
     triggers_to_accept_in       : in std_logic_vector(31 downto 0);
+    -- hybrid mask
+    trigger_hybrid_mask_in       : in std_logic_vector(31 downto 0);
     -- stubs from hybrids
     in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
     -- trigger status register output (31-28 - source, 27-24 - state, 23-20 - error code)
@@ -90,7 +92,7 @@ begin
     trigger_source <= trigger_control_in(31 downto 28);
     trigger_state <= trigger_control_in(27 downto 24);
     reset_counter <= trigger_control_in(23);
-    hybrid_mask_inv <= not trigger_control_in(NUM_HYBRIDS downto 1);
+    hybrid_mask_inv <= not trigger_hybrid_mask_in(NUM_HYBRIDS-1 downto 0);
     stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
     user_trigger_selector <= '1' when TO_INTEGER(unsigned(trigger_divider_in)) > 1 else '0';
     
@@ -183,7 +185,7 @@ port map (
 );
 --===================================--
 
-process (reset, clk_40MHz)
+SOURCE_PROCESS: process (reset, clk_40MHz)
 begin
     if reset = '1' then
         status_source <= x"0";
@@ -212,31 +214,34 @@ begin
     end if;            
 end process;
 
-process (reset, clk_40MHz)
+STATE_PROCESS: process (reset, clk_40MHz)
 begin
     if reset = '1' then
        clock_enable <= '0';
        status_state <= x"0"; 
        status_error <= x"0";
     elsif rising_edge(clk_40MHz) then
-        status_error <= x"0";
     case trigger_state is
         -- Idle
         when x"0" =>
             clock_enable <= '0';
-            status_state <= x"0";             
+            status_state <= x"0";
+            status_error <= x"0";             
         -- Continuous Triggering
         when x"1" =>
             clock_enable <= '1';
             status_state <= x"1";
+            status_error <= x"0";
         -- Accept N Triggers, then stop    
         when x"2" =>            
-            if TO_INTEGER(unsigned(counter)) < TO_INTEGER(unsigned(triggers_to_accept_in)) then
+            if TO_INTEGER(unsigned(counter)) <= TO_INTEGER(unsigned(triggers_to_accept_in)) then
                 clock_enable <= '1';
                 status_state <= x"2";
+                status_error <= x"0";
             else
                 clock_enable <= '0';
                 status_state <= x"3";
+                status_error <= x"0";
             end if;
         when others =>
             clock_enable <= '0';
@@ -245,7 +250,7 @@ begin
     end case;
         -- if no trigger for 10s => bye bye
         --if TO_INTEGER(unsigned(trigger_checker)) >= 10 and counter = counter_prev then
-        if TO_INTEGER(unsigned(trigger_checker)) >= 400_000_000 and counter = counter_prev then
+        if trigger_state /= x"0" and TO_INTEGER(unsigned(trigger_checker)) >= 400_000_000 and counter = counter_prev then
             clock_enable <= '0';
             status_state <= x"0"; 
             status_error <= x"2";
@@ -253,7 +258,7 @@ begin
     end if;
 end process;
 
-process(reset_counter, trigger_i)
+COUNTER_PROCESS: process(reset_counter, trigger_i)
 begin
     if reset_counter /= reset_counter_loc then
         reset_counter_loc <= reset_counter;

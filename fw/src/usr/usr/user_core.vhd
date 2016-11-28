@@ -245,9 +245,9 @@ begin
     port map
     (
         clk             => clk_40MHz,
-        reset           => ctrl_reg(3)(31),
+        reset           => ctrl_reg(4)(31),
         -- command from IpBus
-        command_in      => ctrl_reg(3),
+        command_in      => ctrl_reg(4),
         -- should be output command register
         i2c_request     => i2c_request,
         i2c_reply       => i2c_reply,
@@ -270,12 +270,14 @@ begin
         clk_40Mhz               => clk_40MHz,
         clk_lhc                 => '0',
         reset                   => '0',
-        -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter, 22-1 - hybrid mask)
+        -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter)
         trigger_control_in      => ctrl_reg(0),
         -- output trigger frequency divider
         trigger_divider_in      => ctrl_reg(1),
         -- number of triggers to accept
         triggers_to_accept_in   => ctrl_reg(2),
+        -- hybrid mask                                                  
+        trigger_hybrid_mask_in  => ctrl_reg(3),
         -- stubs from hybrids
         in_stubs                => hybrid_stubs,
         -- trigger status register output (31-28 - source, 27-24 - state, 23-20 - error code)
