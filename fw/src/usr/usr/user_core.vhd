@@ -195,7 +195,7 @@ begin
 	--===========================================--
 
     --===========================================--
-    -- LHC Strobe
+    -- LHC Strobe (L1-Trigger)
     --===========================================--
     fclk_ibuf:      ibufgds     port map (i => fabric_clk_p, ib => fabric_clk_n, o => fabric_clk_pre_buf);
     fclk_bufg:      bufg        port map (i => fabric_clk_pre_buf,               o => fabric_clk);
@@ -268,7 +268,7 @@ begin
     port map
     (
         clk_40Mhz               => clk_40MHz,
-        clk_lhc                 => '0',
+        l1_trigger_in           => '0',
         reset                   => '0',
         -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter)
         trigger_control_in      => ctrl_reg(0),

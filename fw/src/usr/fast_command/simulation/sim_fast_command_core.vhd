@@ -45,7 +45,7 @@ Generic (
 );
 Port (
 clk_40MHz             : in std_logic;
-clk_lhc               : in std_logic;
+l1_trigger_in         : in std_logic;
 reset                 : in std_logic;
 -- trigger control register input
 trigger_control_in    : in std_logic_vector(31 downto 0);

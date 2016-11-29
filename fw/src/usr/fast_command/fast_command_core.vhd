@@ -38,7 +38,7 @@ entity fast_command_core is
   );
   Port (
     clk_40MHz             : in std_logic;
-    clk_lhc               : in std_logic;
+    l1_trigger_in         : in std_logic;
     reset                 : in std_logic;
     -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter)
     trigger_control_in    : in std_logic_vector(31 downto 0);
@@ -165,7 +165,7 @@ port map (
   O       => trigger_i,  
   CE0     => '1',  
   CE1     => '1',  
-  I0      => clk_lhc,  
+  I0      => l1_trigger_in,  
   I1      => ClkOutputMuxB,  
   --I1        => ClkOutputMuxA,
   IGNORE0 => '1',  
@@ -193,7 +193,7 @@ begin
     elsif rising_edge(clk_40MHz) then
         trigger_checker <= trigger_checker + 1;
     case trigger_source is
-        -- spread LHC clock as trigger
+        -- spread L1-Trigger as trigger
         when x"1" =>
             status_source <= x"1";
         -- triggers using stubs from the hybrids, could be coincidence
