@@ -17,6 +17,8 @@ package cmdbus is
       cmd_read              : std_logic;
       -- register_address
       cmd_register          : std_logic_vector(7 downto 0);
+      -- register write mask ( to avoid overriding of the current settings )
+      cmd_write_mask        : std_logic_vector(7 downto 0);
       -- data to cbc
       cmd_data              : std_logic_vector(7 downto 0); 
     end record;

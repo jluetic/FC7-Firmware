@@ -169,7 +169,8 @@ architecture usr of user_core is
     signal ipb_clk					: std_logic;
     signal ctrl_reg                 : array_32x32bit;
     signal stat_reg                 : array_32x32bit;
-    
+    signal command_in               : array_2x32bit;
+    signal stat_chips_data          : array_2x32bit;
     -- I2C command lines from Fast Command Block to PHY and back
     signal i2c_request              : cmd_wbus;
     signal i2c_reply                : cmd_rbus;
@@ -235,6 +236,10 @@ begin
     --===================================--
     -- Block responsible for I2C command processing. Is connected to: fast command block, hybrids.
     --===================================--
+    command_in(0) <= ctrl_reg(4);
+    command_in(1) <= ctrl_reg(5);
+    stat_reg(2)   <= stat_chips_data(0);
+    stat_reg(3)   <= stat_chips_data(1);
     command_processor_block: entity work.command_processor_core
     --===================================--
     generic map
@@ -245,14 +250,16 @@ begin
     port map
     (
         clk             => clk_40MHz,
-        reset           => ctrl_reg(4)(31),
+        reset           => '0',
         -- command from IpBus
-        command_in      => ctrl_reg(4),
+        command_in      => command_in,
         -- should be output command register
         i2c_request     => i2c_request,
         i2c_reply       => i2c_reply,
         -- status back using IpBus
-        status_out      => stat_reg(1)
+        status_out      => stat_reg(1),
+        -- 8 chips data back
+        status_data     => stat_chips_data
     );        
     --===================================--    
     

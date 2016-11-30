@@ -7,42 +7,90 @@
          <top_modules>
             <top_module name="cmdbus" />
             <top_module name="sim_command_processor_core" />
+            <top_module name="system_package" />
+            <top_module name="user_package" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="449999999fs"></ZoomStartTime>
-      <ZoomEndTime time="1110000001fs"></ZoomEndTime>
-      <Cursor1Time time="1000000000fs"></Cursor1Time>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="1226000001fs"></ZoomEndTime>
+      <Cursor1Time time="3262500000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="7" />
-   <wvobject type="other" fp_name="/sim_command_processor_core/UUT/processor_fsm_state">
-      <obj_property name="ElementShortName">processor_fsm_state</obj_property>
-      <obj_property name="ObjectShortName">processor_fsm_state</obj_property>
-   </wvobject>
+   <WVObjectSize size="16" />
    <wvobject type="logic" fp_name="/sim_command_processor_core/clk">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_command_processor_core/UUT/status_command">
-      <obj_property name="ElementShortName">status_command[3:0]</obj_property>
-      <obj_property name="ObjectShortName">status_command[3:0]</obj_property>
+   <wvobject type="array" fp_name="/sim_command_processor_core/command_in">
+      <obj_property name="ElementShortName">command_in[0:1][31:0]</obj_property>
+      <obj_property name="ObjectShortName">command_in[0:1][31:0]</obj_property>
+      <wvobject type="array" fp_name="/sim_command_processor_core/command_in[0]">
+         <obj_property name="ElementShortName">[0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">[0][31:0]</obj_property>
+         <obj_property name="isExpanded"></obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/sim_command_processor_core/command_in[1]">
+         <obj_property name="ElementShortName">[1][31:0]</obj_property>
+         <obj_property name="ObjectShortName">[1][31:0]</obj_property>
+      </wvobject>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_command_processor_core/UUT/status_error">
-      <obj_property name="ElementShortName">status_error[3:0]</obj_property>
-      <obj_property name="ObjectShortName">status_error[3:0]</obj_property>
+   <wvobject type="array" fp_name="/sim_command_processor_core/status_data">
+      <obj_property name="ElementShortName">status_data[0:1][31:0]</obj_property>
+      <obj_property name="ObjectShortName">status_data[0:1][31:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/UUT/start_sending">
-      <obj_property name="ElementShortName">start_sending</obj_property>
-      <obj_property name="ObjectShortName">start_sending</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_command_processor_core/UUT/i2c_request">
+   <wvobject type="array" fp_name="/sim_command_processor_core/i2c_request">
       <obj_property name="ElementShortName">i2c_request</obj_property>
       <obj_property name="ObjectShortName">i2c_request</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_command_processor_core/UUT/command_type">
-      <obj_property name="ElementShortName">command_type[4:0]</obj_property>
-      <obj_property name="ObjectShortName">command_type[4:0]</obj_property>
       <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/i2c_reply">
+      <obj_property name="ElementShortName">i2c_reply</obj_property>
+      <obj_property name="ObjectShortName">i2c_reply</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/command_type">
+      <obj_property name="ElementShortName">command_type[3:0]</obj_property>
+      <obj_property name="ObjectShortName">command_type[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/hybrid_id">
+      <obj_property name="ElementShortName">hybrid_id[4:0]</obj_property>
+      <obj_property name="ObjectShortName">hybrid_id[4:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/chip_id">
+      <obj_property name="ElementShortName">chip_id[3:0]</obj_property>
+      <obj_property name="ObjectShortName">chip_id[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_command_processor_core/read">
+      <obj_property name="ElementShortName">read</obj_property>
+      <obj_property name="ObjectShortName">read</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/register_address">
+      <obj_property name="ElementShortName">register_address[7:0]</obj_property>
+      <obj_property name="ObjectShortName">register_address[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/write_mask">
+      <obj_property name="ElementShortName">write_mask[7:0]</obj_property>
+      <obj_property name="ObjectShortName">write_mask[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/data">
+      <obj_property name="ElementShortName">data[7:0]</obj_property>
+      <obj_property name="ObjectShortName">data[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_command_processor_core/data_processed">
+      <obj_property name="ElementShortName">data_processed</obj_property>
+      <obj_property name="ObjectShortName">data_processed</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/sim_command_processor_core/UUT/processor_fsm_state">
+      <obj_property name="ElementShortName">processor_fsm_state</obj_property>
+      <obj_property name="ObjectShortName">processor_fsm_state</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_command_processor_core/UUT/status_error">
+      <obj_property name="ElementShortName">status_error[7:0]</obj_property>
+      <obj_property name="ObjectShortName">status_error[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_command_processor_core/UUT/status_data_ready">
+      <obj_property name="ElementShortName">status_data_ready</obj_property>
+      <obj_property name="ObjectShortName">status_data_ready</obj_property>
    </wvobject>
 </wave_config>
