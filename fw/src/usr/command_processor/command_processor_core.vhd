@@ -24,7 +24,6 @@ use IEEE.STD_LOGIC_1164.ALL;
 use work.cmdbus.all;
 use work.system_package.all;
 use work.user_package.all;
-use ieee.std_logic_unsigned.all;
 
 
 -- Uncomment the following library declaration if using
@@ -38,8 +37,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity command_processor_core is
   Generic (
-    NUM_HYBRIDS     : natural := 1;
-    NUM_CHIPS       : natural := 1
+    NUM_HYBRIDS     : integer range 1 to 32 := 1;
+    NUM_CHIPS       : integer range 1 to 16 := 1
   );
   Port ( 
     clk             : in std_logic;
@@ -52,7 +51,7 @@ entity command_processor_core is
     -- status back using IpBus
     status_out      : out std_logic_vector(31 downto 0);
     -- 8 chips data back
-    status_data     : out array_2x32bit
+    status_data     : out array_4x32bit
   );
 end command_processor_core;
 
@@ -62,8 +61,7 @@ architecture rtl of command_processor_core is
     -- signal definition
     --==========================--
     -- previous command
-    signal command_in_prev_0      : std_logic_vector(31 downto 0) := (others => '0');
-    signal command_in_prev_1      : std_logic_vector(31 downto 0) := (others => '0');
+    signal command_in_prev_0      : std_logic_vector(3 downto 0) := (others => '0');
     -- command type
     signal command_type           : std_logic_vector(3 downto 0) := (others => '0');
     -- hybrid_id
@@ -80,7 +78,8 @@ architecture rtl of command_processor_core is
     signal write_mask             : std_logic_vector(7 downto 0) := (others => '0');
     signal data_to_hybrid         : std_logic_vector(7 downto 0) := (others => '0');
     -- when data was taken back by IPBus
-    signal status_data_processed  : std_logic;    
+    signal status_data_processed  : std_logic_vector(4 downto 0);
+    signal temp_hybrid_id         : std_logic_vector(4 downto 0);    
     --==========================--
     
     --==========================--
@@ -95,11 +94,11 @@ architecture rtl of command_processor_core is
     --==========================--
     
     -- multiple read-out
-    signal chip_data              : array_8x8bit := (others => (others => '0'));
+    signal chip_data              : array_16x8bit := (others => (others => '0'));
     
     -- counters
-    signal chip_counter           : std_logic_vector(3 downto 0) := (others => '0');
-    signal hybrid_counter         : std_logic_vector(4 downto 0) := (others => '0');
+    signal chip_counter           : integer range 0 to NUM_CHIPS-1 := 0;
+    signal hybrid_counter         : integer range 0 to NUM_HYBRIDS-1 := 0;
         
     -- statuses
     signal status_command         : std_logic_vector(3 downto 0) := x"0";
@@ -110,7 +109,7 @@ architecture rtl of command_processor_core is
 begin
 
     -- data processed signal
-    status_data_processed <= command_in(0)(11);     
+    status_data_processed <= command_in(0)(15 downto 11);     
     
     -- statuses
     status_out(31 downto 28) <= status_command;
@@ -120,25 +119,21 @@ begin
     status_out(14 downto 0)  <= (others => '0');
     
     -- multiple read-out
-    status_data(0)(7 downto 0) <= chip_data(0);
-    status_data(0)(15 downto 8) <= chip_data(1);
-    status_data(0)(23 downto 16) <= chip_data(2);
-    status_data(0)(31 downto 24) <= chip_data(3);
-    status_data(1)(7 downto 0) <= chip_data(4);
-    status_data(1)(15 downto 8) <= chip_data(5);
-    status_data(1)(23 downto 16) <= chip_data(6);
-    status_data(1)(31 downto 24) <= chip_data(7);    
+    GENERATE_OUT_DATA: for reg_id in 0 to 3 generate
+        status_data(reg_id)(7 downto 0) <= chip_data(reg_id*4);
+        status_data(reg_id)(15 downto 8) <= chip_data(reg_id*4+1);
+        status_data(reg_id)(23 downto 16) <= chip_data(reg_id*4+2);
+        status_data(reg_id)(31 downto 24) <= chip_data(reg_id*4+3);
+    end generate;   
         
 process(reset, clk)
 begin
     if reset = '1' then
-        command_in_prev_0 <= command_in(0);
-        command_in_prev_1 <= command_in(1);
+        command_in_prev_0 <= command_in(0)(31 downto 28);
         
     elsif rising_edge(clk) then
-        if command_in(0) /= command_in_prev_0 and command_in(1) /= command_in_prev_1 then
-            command_in_prev_0 <= command_in(0);
-            command_in_prev_1 <= command_in(1);
+        if command_in(0)(31 downto 28) /= command_in_prev_0 then
+            command_in_prev_0 <= command_in(0)(31 downto 28);
             if processor_fsm_state = Idle then            
                 start_sending <= not start_sending;
             end if;
@@ -158,6 +153,9 @@ begin
         status_data_ready <= '0';
         
         all_done <= '0';
+        
+        chip_counter <= 0;
+        hybrid_counter <= 0;
         
         chip_data <= (others => (others => '0'));
         
@@ -188,8 +186,9 @@ begin
                 
                 status_error <= x"00";       
                 status_data_ready <= '0';         
-                chip_counter <= (others => '0');
-                hybrid_counter <= (others => '0');
+
+                chip_counter <= 0;
+                hybrid_counter <= 0;
                 
                 command_type    <= command_in(0)(31 downto 28);
                 hybrid_id       <= command_in(0)(10 downto 6);
@@ -209,28 +208,45 @@ begin
             -- setting register value to a certain hybrid,chip
             if command_type = x"1" then
                     status_command <= x"1";
-                    i2c_request.cmd_hybrid_id <= hybrid_id;
-                    i2c_request.cmd_chip_id <= chip_id;
-                    i2c_request.cmd_strobe <= '1';
-                    processor_fsm_state <= WaitForResponse; 
+                    if(TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS) or (TO_INTEGER(unsigned(chip_id))+1>NUM_CHIPS) then
+                        -- wrong hybrid or chip id
+                        status_error <= x"13";
+                        processor_fsm_state <= Finished;
+                    else
+                        i2c_request.cmd_hybrid_id <= hybrid_id;
+                        temp_hybrid_id <= hybrid_id;
+                        i2c_request.cmd_chip_id <= chip_id;
+                        i2c_request.cmd_strobe <= '1';
+                        processor_fsm_state <= WaitForResponse;
+                    end if; 
             -- setting register value to all chips within a certain hybrid
             elsif command_type = x"2" then                    
                     status_command <= x"2";
-                    i2c_request.cmd_hybrid_id <= hybrid_id;
-                    i2c_request.cmd_chip_id <= chip_counter;
-                    i2c_request.cmd_strobe <= '1';
-                    processor_fsm_state <= WaitForResponse; 
+                    if TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS then
+                        -- wrong hybrid or chip id
+                        status_error <= x"13";
+                        processor_fsm_state <= Finished;
+                    else
+                        i2c_request.cmd_hybrid_id <= hybrid_id;
+                        temp_hybrid_id <= hybrid_id;
+                        i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id 'length));
+                        i2c_request.cmd_strobe <= '1';
+                        processor_fsm_state <= WaitForResponse; 
+                    end if;
             -- setting register value to all chips all Hybrids
             elsif command_type = x"3" then                    
                     status_command <= x"3";
-                    i2c_request.cmd_hybrid_id <= hybrid_counter;
-                    i2c_request.cmd_chip_id <= chip_counter;
+                    i2c_request.cmd_hybrid_id <= std_logic_vector(to_unsigned(hybrid_counter, i2c_request.cmd_hybrid_id 'length));
+                    temp_hybrid_id <= std_logic_vector(to_unsigned(hybrid_counter, i2c_request.cmd_hybrid_id 'length));
+                    i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id 'length));
                     i2c_request.cmd_strobe <= '1';
                     processor_fsm_state <= WaitForResponse; 
             else
                     status_command <= x"0";
                     -- wrong command
-                    status_error <= x"11";
+                    if command_type /= x"0" then 
+                        status_error <= x"11";
+                    end if;
                     i2c_request.cmd_strobe <= '0';
                     processor_fsm_state <= Finished;                     
             end if;
@@ -248,7 +264,7 @@ begin
                     -- setting register value to a certain hybrid,chip
                     if command_type = x"1" then
                         if read = '1' then 
-                            chip_data(0) <= i2c_reply.cmd_data;
+                            chip_data(TO_INTEGER(unsigned(chip_id))) <= i2c_reply.cmd_data;
                             status_data_ready <= '1';
                             all_done <= '1';
                             processor_fsm_state <= WaitForProcessed;
@@ -258,9 +274,9 @@ begin
                     -- setting register value to all chips within a certain hybrid
                     elsif command_type = x"2" then
                         if read = '1' then
-                            chip_data(to_integer(unsigned(chip_counter))) <= i2c_reply.cmd_data;
+                            chip_data(chip_counter) <= i2c_reply.cmd_data;
                         end if;
-                        if chip_counter < std_logic_vector(to_unsigned(NUM_CHIPS-1, chip_counter'length)) then
+                        if chip_counter < NUM_CHIPS-1 then
                             chip_counter <= chip_counter + 1;
                             processor_fsm_state <= SendCommand;
                         else
@@ -275,12 +291,12 @@ begin
                     -- setting register value to all chips all Hybrids
                     elsif command_type = x"3" then
                         if read = '1' then
-                            chip_data(to_integer(unsigned(chip_counter))) <= i2c_reply.cmd_data;
+                            chip_data(chip_counter) <= i2c_reply.cmd_data;
                         end if;
-                        if hybrid_counter < std_logic_vector(to_unsigned(NUM_HYBRIDS, hybrid_counter'length)) and chip_counter < std_logic_vector(to_unsigned(NUM_CHIPS-1, chip_counter'length)) then
+                        if hybrid_counter <= NUM_HYBRIDS-1 and chip_counter < NUM_CHIPS-1 then
                             chip_counter <= chip_counter + 1;
                             processor_fsm_state <= SendCommand;
-                        elsif hybrid_counter < std_logic_vector(to_unsigned(NUM_HYBRIDS-1, hybrid_counter'length)) then
+                        elsif hybrid_counter < NUM_HYBRIDS-1 then
                             if read = '1' then
                                 all_done <= '0';
                                 status_data_ready <= '1';
@@ -288,7 +304,7 @@ begin
                             else 
                                 processor_fsm_state <= SendCommand;
                             end if;                        
-                            chip_counter <= (others => '0');
+                            chip_counter <= 0;
                             hybrid_counter <= hybrid_counter + 1;
                         else
                             if read = '1' then
@@ -310,10 +326,10 @@ begin
             end if;
         when WaitForProcessed =>
             status_fsm <= x"4";
-            if status_data_processed = '1' and all_done = '1' then 
+            if status_data_processed = temp_hybrid_id and all_done = '1' then 
                 status_data_ready <= '0';               
                 processor_fsm_state <= Finished;
-            elsif status_data_processed = '1' then
+            elsif status_data_processed = temp_hybrid_id then
                 status_data_ready <= '0';
                 chip_data <= (others => (others => '0'));
                 processor_fsm_state <= SendCommand;

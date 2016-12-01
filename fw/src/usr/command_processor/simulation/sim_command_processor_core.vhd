@@ -56,7 +56,7 @@ component command_processor_core
   -- status back using IpBus
   status_out      : out std_logic_vector(31 downto 0);
   -- 8 chips data back
-  status_data     : out array_2x32bit
+  status_data     : out array_4x32bit
   );
 end component;
 
@@ -72,8 +72,8 @@ component sim_ipbus_processor
     -- status
     status_in      : in std_logic_vector(31 downto 0);
     -- 8 chips data back
-    status_data    : in array_2x32bit;
-    data_processed : out STD_LOGIC);
+    status_data    : in array_4x32bit;
+    data_processed : out std_logic_vector(4 downto 0));
 end component;
 
 
@@ -82,13 +82,13 @@ signal clk : std_logic;
 signal clk_prev : std_logic := '0';
 signal command_in : array_2x32bit := (others => (others => '0'));
 signal status_out : std_logic_vector(31 downto 0);
-signal status_data : array_2x32bit;
+signal status_data : array_4x32bit;
 signal i2c_request              : cmd_wbus;
 signal i2c_reply                : cmd_rbus;
 
 signal command_type           : std_logic_vector(3 downto 0) := (others => '0');
 -- hybrid_id
-signal hybrid_id              : std_logic_vector(4 downto 0) := "00010";
+signal hybrid_id              : std_logic_vector(4 downto 0) := "00000";
 -- cbc on hybrid id
 signal chip_id                : std_logic_vector(3 downto 0) := x"1";
 -- page in the CBC
@@ -101,15 +101,14 @@ signal register_address       : std_logic_vector(7 downto 0) := x"23";
 signal write_mask             : std_logic_vector(7 downto 0) := "00000011";
 signal data                   : std_logic_vector(7 downto 0) := x"AB";
 
-signal data_processed         : std_logic := '0';
-signal runner                 : std_logic := '0';
+signal data_processed         : std_logic_vector(4 downto 0) := "00000";
 
 begin
 
-    command_in(0) <= command_type & x"0000" & data_processed & hybrid_id & chip_id & read & page;
-    command_in(1) <= runner & "000" & x"0" & register_address & write_mask & data;
+    command_in(0) <= command_type & x"000" & data_processed & hybrid_id & chip_id & read & page;
+    command_in(1) <= x"00" & register_address & write_mask & data;
 
-    UUT: command_processor_core generic map (4,2)
+    UUT: command_processor_core generic map (2,2)
     port map(clk, '0', command_in,i2c_request,i2c_reply,status_out,status_data);
     
     PHY_REPONSE_GENERATOR: answer_block port map(clk, i2c_request.cmd_strobe, i2c_reply);
@@ -125,16 +124,12 @@ begin
     
     commands_process: process
     begin
-        runner <= '0';
         command_type <= x"0";
         wait for 200 ns;
-        runner <= '1';
         command_type <= x"1";
         wait for 200 ns;
-        runner <= '0';
         command_type <= x"2";
         wait for 2000 ns;
-        runner <= '1';
         command_type <= x"3";
         wait for 2000 ns;
     end process;

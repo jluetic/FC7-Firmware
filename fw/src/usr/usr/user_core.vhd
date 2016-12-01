@@ -150,8 +150,8 @@ architecture usr of user_core is
     --===================================--
     -- Constant definition
     --===================================--
-    constant NUM_HYBRIDS            : integer := 1;
-    constant NUM_CHIPS            : integer := 1;
+    constant NUM_HYBRIDS            : integer := 2;
+    constant NUM_CHIPS            : integer := 8;
     --===================================--
     
     --===================================--
@@ -170,7 +170,7 @@ architecture usr of user_core is
     signal ctrl_reg                 : array_32x32bit;
     signal stat_reg                 : array_32x32bit;
     signal command_in               : array_2x32bit;
-    signal stat_chips_data          : array_2x32bit;
+    signal stat_chips_data          : array_4x32bit;
     -- I2C command lines from Fast Command Block to PHY and back
     signal i2c_request              : cmd_wbus;
     signal i2c_reply                : cmd_rbus;
@@ -240,6 +240,8 @@ begin
     command_in(1) <= ctrl_reg(5);
     stat_reg(2)   <= stat_chips_data(0);
     stat_reg(3)   <= stat_chips_data(1);
+    stat_reg(4)   <= stat_chips_data(2);
+    stat_reg(5)   <= stat_chips_data(3);
     command_processor_block: entity work.command_processor_core
     --===================================--
     generic map
@@ -262,6 +264,10 @@ begin
         status_data     => stat_chips_data
     );        
     --===================================--    
+    phy_answer_generator: entity work.answer_block
+        port map ( clk              => clk_40MHz,
+                   request_strobe   => i2c_request.cmd_strobe,
+                   i2c_reply        => i2c_reply);
     
     --===================================--
     -- Fast commands. Connected to: physical interface, hybrids.

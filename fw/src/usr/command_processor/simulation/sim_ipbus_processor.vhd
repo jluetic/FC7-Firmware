@@ -38,11 +38,13 @@ entity sim_ipbus_processor is
     -- status
     status_in      : in std_logic_vector(31 downto 0);
     -- 8 chips data back
-    status_data    : in array_2x32bit;
-    data_processed : out STD_LOGIC);
+    status_data    : in array_4x32bit;
+    data_processed : out std_logic_vector(4 downto 0));
 end sim_ipbus_processor;
 
 architecture rtl of sim_ipbus_processor is
+
+    signal counter : std_logic := '0';
 
 begin
 
@@ -50,9 +52,13 @@ response_process: process (clk)
 begin
     if rising_edge(clk) then
         if status_in(15) = '1' then
-            data_processed <= '1';
-        else
-            data_processed <= '0';
+            if counter = '0' then
+                data_processed <= "00000";
+                counter <= '1';
+            else
+                data_processed <= "00001";
+                counter <= '0';
+            end if;
         end if;
     end if;
 end process; 
