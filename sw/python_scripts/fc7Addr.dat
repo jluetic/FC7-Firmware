@@ -9,8 +9,9 @@ status_trigger			40000000    ffffffff     1     0
 status_command_block		40000001    ffffffff     1     0
     status_cmd_command          40000001    f0000000     1     0
     status_cmd_fsm              40000001    0f000000     1     0
-    status_cmd_error            40000001    00ff0000     1     0
-    status_cmd_data_ready       40000001    00008000     1     0
+    status_cmd_error_block_id   40000001    00f00000     1     0
+    status_cmd_error_code       40000001    000ff000     1     0
+    status_cmd_data_ready       40000001    00000800     1     0
 
 status_data_0                   40000002    ffffffff     1     0
     chip_data_0                 40000002    000000ff     1     0
@@ -44,7 +45,7 @@ trigger_accept_n		40000042    ffffffff     1     1
 trigger_hybrid_mask		40000043    ffffffff     1     1
 
 command_processor_cmd_in1	40000044    ffffffff     1     1
-    cmd_type                    40000044    f0000000     1     1
+    command                     40000044    f0000000     1     1
     data_processed              40000044    0000f800     1     1
     i2c_hybrid_id               40000044    000007c0     1     1
     i2c_chip_id                 40000044    0000003c     1     1

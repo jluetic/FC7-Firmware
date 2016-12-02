@@ -21,7 +21,6 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.cmdbus.all;
 use work.system_package.all;
 use work.user_package.all;
 
@@ -58,12 +57,19 @@ end command_processor_core;
 architecture rtl of command_processor_core is
 
     --==========================--
-    -- signal definition
+    -- command processing signals
     --==========================--
-    -- previous command
-    signal command_in_prev_0      : std_logic_vector(3 downto 0) := (others => '0');
+    signal command_from_ipbus      : std_logic_vector(3 downto 0) := (others => '0');
+    signal command_from_ipbus_loc      : std_logic_vector(3 downto 0) := (others => '0');
+    type command_type is (None, I2C, Fast, Unknown);
+    signal ipbus_command_type     : command_type;
+    signal ipbus_command_type_loc : command_type := None;    
+    
+    --==========================--
+    -- i2c signal definition
+    --==========================--
     -- command type
-    signal command_type           : std_logic_vector(3 downto 0) := (others => '0');
+    signal i2c_command            : std_logic_vector(3 downto 0) := (others => '0');
     -- hybrid_id
     signal hybrid_id              : std_logic_vector(4 downto 0) := (others => '0');
     -- cbc on hybrid id
@@ -76,47 +82,98 @@ architecture rtl of command_processor_core is
     signal register_address       : std_logic_vector(7 downto 0) := (others => '0');
     -- write mask
     signal write_mask             : std_logic_vector(7 downto 0) := (others => '0');
-    signal data_to_hybrid         : std_logic_vector(7 downto 0) := (others => '0');
-    -- when data was taken back by IPBus
-    signal status_data_processed  : std_logic_vector(4 downto 0);
-    signal temp_hybrid_id         : std_logic_vector(4 downto 0);    
+    signal data_to_chip           : std_logic_vector(7 downto 0) := (others => '0');
+    -- data from chips
+    signal chip_data              : array_16x8bit := (others => (others => '0'));
+    -- i2c fsm status
+    signal i2c_fsm_status         : std_logic_vector(3 downto 0) := (others => '0');
+    -- i2c fsm status
+    signal i2c_fsm_error          : std_logic_vector(7 downto 0) := (others => '0');
+    signal i2c_execution_finished : std_logic;
     --==========================--
     
     --==========================--
     -- processor fsm definition
     --==========================--
-    type state_type is (Idle, SendCommand, WaitForResponse, WaitForProcessed, Finished);
+    type state_type is (Idle, SendCommand, WaitForFinished);
     signal processor_fsm_state    : state_type := Idle;
-    signal start_sending          : std_logic := '0';
-    signal start_sending_loc      : std_logic := '0';
-    -- when all the commands had been executed
-    signal all_done               : std_logic := '0';
+    signal processor_fsm_error         : std_logic_vector(7 downto 0) := (others => '0');
+    signal start_sending_i2c          : std_logic := '0';
     --==========================--
     
-    -- multiple read-out
-    signal chip_data              : array_16x8bit := (others => (others => '0'));
-    
-    -- counters
-    signal chip_counter           : integer range 0 to NUM_CHIPS-1 := 0;
-    signal hybrid_counter         : integer range 0 to NUM_HYBRIDS-1 := 0;
-        
+    --==========================--    
     -- statuses
-    signal status_command         : std_logic_vector(3 downto 0) := x"0";
-    signal status_fsm             : std_logic_vector(3 downto 0) := x"0";
-    signal status_error           : std_logic_vector(7 downto 0) := x"00";
-    signal status_data_ready      : std_logic := '0';    
+    --==========================--
+    signal status_last_command    : std_logic_vector(3 downto 0) := x"0";
+    signal status_processor_fsm   : std_logic_vector(3 downto 0) := x"0";
+    signal status_error_block_id  : std_logic_vector(3 downto 0) := x"0";
+    signal status_error_code      : std_logic_vector(7 downto 0) := x"00";
+    signal status_data_ready      : std_logic := '0'; 
+    --==========================--   
     
 begin
 
-    -- data processed signal
-    status_data_processed <= command_in(0)(15 downto 11);     
+    command_from_ipbus <= command_in(0)(31 downto 28);
     
+    with command_from_ipbus select ipbus_command_type <=
+        None    when x"0",
+        I2C     when x"1",
+        I2C     when x"2",
+        I2C     when x"3",
+        Unknown when x"4",
+        Unknown when x"6",
+        Unknown when x"7",
+        Unknown when x"8",
+        Fast    when x"9",
+        Unknown when x"A",
+        Unknown when x"B",
+        Unknown when x"C",
+        Unknown when x"D",
+        Unknown when x"E",
+        Unknown when x"F",
+        Unknown when others;
+   
+    --===================================--
+    -- Block responsible for I2C Command Sending
+    --===================================--
+    i2c_master: entity work.cmd_i2c_master
+    --===================================--
+    generic map
+    (
+       NUM_HYBRIDS => NUM_HYBRIDS,
+       NUM_CHIPS   => NUM_CHIPS
+    )
+    port map
+    (
+       clk              => clk,
+       reset            => reset,
+       start_sending    => start_sending_i2c,
+       command_type     => i2c_command,
+       hybrid_id        => hybrid_id,
+       chip_id          => chip_id,
+       read             => read,
+       page             => page,
+       register_address => register_address,
+       write_mask       => write_mask,
+       data             => data_to_chip,
+       chip_data        => chip_data,
+       i2c_fsm_status   => i2c_fsm_status,
+       error_code       => i2c_fsm_error,
+       i2c_request      => i2c_request,
+       i2c_reply        => i2c_reply,
+       data_ready       => status_data_ready,
+       data_processed   => command_in(0)(15 downto 11),
+       execution_finished => i2c_execution_finished
+    );        
+    --===================================--
+        
     -- statuses
-    status_out(31 downto 28) <= status_command;
-    status_out(27 downto 24) <= status_fsm;
-    status_out(23 downto 16) <= status_error;
-    status_out(15)           <= status_data_ready;
-    status_out(14 downto 0)  <= (others => '0');
+    status_out(31 downto 28) <= status_last_command;
+    status_out(27 downto 24) <= status_processor_fsm;
+    status_out(23 downto 20) <= status_error_block_id;
+    status_out(19 downto 12) <= status_error_code;
+    status_out(11)           <= status_data_ready;
+    status_out(10 downto 0)  <= (others => '0');
     
     -- multiple read-out
     GENERATE_OUT_DATA: for reg_id in 0 to 3 generate
@@ -125,225 +182,103 @@ begin
         status_data(reg_id)(23 downto 16) <= chip_data(reg_id*4+2);
         status_data(reg_id)(31 downto 24) <= chip_data(reg_id*4+3);
     end generate;   
-        
-process(reset, clk)
-begin
-    if reset = '1' then
-        command_in_prev_0 <= command_in(0)(31 downto 28);
-        
-    elsif rising_edge(clk) then
-        if command_in(0)(31 downto 28) /= command_in_prev_0 then
-            command_in_prev_0 <= command_in(0)(31 downto 28);
-            if processor_fsm_state = Idle then            
-                start_sending <= not start_sending;
-            end if;
-        end if;
-    end if;
-end process;
 
 PROCESSOR_FSM: process(reset, clk)
 begin
     if reset = '1' then
-        processor_fsm_state <= Idle;
-        start_sending_loc <= start_sending;
+        command_from_ipbus_loc <= command_from_ipbus;
+        ipbus_command_type_loc <= ipbus_command_type;
         
-        status_command <= x"0";
-        status_fsm <= x"0";
-        status_error <= x"00";
-        status_data_ready <= '0';
-        
-        all_done <= '0';
-        
-        chip_counter <= 0;
-        hybrid_counter <= 0;
-        
-        chip_data <= (others => (others => '0'));
-        
-        command_type    <= (others => '0');
-        hybrid_id       <= (others => '0');
-        chip_id         <= (others => '0');
-        read            <= '0';
-        page            <= '0';
-        register_address <= (others => '0');
-        write_mask <= (others => '0');
-        data_to_hybrid  <= (others => '0');
-        
-        i2c_request.cmd_page <= '0';
-        i2c_request.cmd_read <= '0';
-        i2c_request.cmd_hybrid_id <= (others => '0');
-        i2c_request.cmd_chip_id <= (others => '0');
-        i2c_request.cmd_register <= (others => '0');
-        i2c_request.cmd_write_mask <= (others => '0');
-        i2c_request.cmd_data <= (others => '0');        
-        i2c_request.cmd_strobe <= '0'; 
+        processor_fsm_error <= x"00";
+        processor_fsm_state <= Idle;        
+        status_processor_fsm <= x"1";
+
+        -- i2c resetter               
+        i2c_command         <= (others => '0');
+        hybrid_id           <= (others => '0');
+        chip_id             <= (others => '0');
+        read                <= '0';
+        page                <= '0';
+        register_address    <= (others => '0');
+        write_mask          <= (others => '0');
+        data_to_chip        <= (others => '0');   
         
     elsif rising_edge(clk) then
     case processor_fsm_state is
         when Idle =>
-            status_fsm <= x"1";
-            if start_sending /= start_sending_loc then
-                start_sending_loc <= start_sending;
-                
-                status_error <= x"00";       
-                status_data_ready <= '0';         
-
-                chip_counter <= 0;
-                hybrid_counter <= 0;
-                
-                command_type    <= command_in(0)(31 downto 28);
-                hybrid_id       <= command_in(0)(10 downto 6);
-                chip_id         <= command_in(0)(5 downto 2);
-                read            <= command_in(0)(1);
-                page            <= command_in(0)(0);
-                register_address <= command_in(1)(23 downto 16);
-                write_mask      <= command_in(1)(15 downto 8);
-                data_to_hybrid  <= command_in(1)(7 downto 0);
-                
-                chip_data <= (others => (others => '0'));
-                all_done <= '0';
-                processor_fsm_state <= SendCommand;
-            end if;
-        when SendCommand =>
-            status_fsm <= x"2";
-            -- setting register value to a certain hybrid,chip
-            if command_type = x"1" then
-                    status_command <= x"1";
-                    if(TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS) or (TO_INTEGER(unsigned(chip_id))+1>NUM_CHIPS) then
-                        -- wrong hybrid or chip id
-                        status_error <= x"13";
-                        processor_fsm_state <= Finished;
-                    else
-                        i2c_request.cmd_hybrid_id <= hybrid_id;
-                        temp_hybrid_id <= hybrid_id;
-                        i2c_request.cmd_chip_id <= chip_id;
-                        i2c_request.cmd_strobe <= '1';
-                        processor_fsm_state <= WaitForResponse;
-                    end if; 
-            -- setting register value to all chips within a certain hybrid
-            elsif command_type = x"2" then                    
-                    status_command <= x"2";
-                    if TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS then
-                        -- wrong hybrid or chip id
-                        status_error <= x"13";
-                        processor_fsm_state <= Finished;
-                    else
-                        i2c_request.cmd_hybrid_id <= hybrid_id;
-                        temp_hybrid_id <= hybrid_id;
-                        i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id 'length));
-                        i2c_request.cmd_strobe <= '1';
-                        processor_fsm_state <= WaitForResponse; 
-                    end if;
-            -- setting register value to all chips all Hybrids
-            elsif command_type = x"3" then                    
-                    status_command <= x"3";
-                    i2c_request.cmd_hybrid_id <= std_logic_vector(to_unsigned(hybrid_counter, i2c_request.cmd_hybrid_id 'length));
-                    temp_hybrid_id <= std_logic_vector(to_unsigned(hybrid_counter, i2c_request.cmd_hybrid_id 'length));
-                    i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id 'length));
-                    i2c_request.cmd_strobe <= '1';
-                    processor_fsm_state <= WaitForResponse; 
-            else
-                    status_command <= x"0";
-                    -- wrong command
-                    if command_type /= x"0" then 
-                        status_error <= x"11";
-                    end if;
-                    i2c_request.cmd_strobe <= '0';
-                    processor_fsm_state <= Finished;                     
-            end if;
-            i2c_request.cmd_page <= page;
-            i2c_request.cmd_read <= read;
-            i2c_request.cmd_register <= register_address;
-            i2c_request.cmd_write_mask <= write_mask;
-            i2c_request.cmd_data <= data_to_hybrid;
-        when WaitForResponse =>
-            status_fsm <= x"3";
-            -- will wait for response from phy here
-            if i2c_reply.cmd_strobe = '1' then
-                i2c_request.cmd_strobe <= '0';
-                if i2c_reply.cmd_err = '0' then
-                    -- setting register value to a certain hybrid,chip
-                    if command_type = x"1" then
-                        if read = '1' then 
-                            chip_data(TO_INTEGER(unsigned(chip_id))) <= i2c_reply.cmd_data;
-                            status_data_ready <= '1';
-                            all_done <= '1';
-                            processor_fsm_state <= WaitForProcessed;
-                        else
-                            processor_fsm_state <= Finished;
-                        end if;
-                    -- setting register value to all chips within a certain hybrid
-                    elsif command_type = x"2" then
-                        if read = '1' then
-                            chip_data(chip_counter) <= i2c_reply.cmd_data;
-                        end if;
-                        if chip_counter < NUM_CHIPS-1 then
-                            chip_counter <= chip_counter + 1;
-                            processor_fsm_state <= SendCommand;
-                        else
-                            if read = '1' then
-                                all_done <= '1';
-                                status_data_ready <= '1';
-                                processor_fsm_state <= WaitForProcessed;
-                            else 
-                                processor_fsm_state <= Finished;
-                            end if;
-                        end if;
-                    -- setting register value to all chips all Hybrids
-                    elsif command_type = x"3" then
-                        if read = '1' then
-                            chip_data(chip_counter) <= i2c_reply.cmd_data;
-                        end if;
-                        if hybrid_counter <= NUM_HYBRIDS-1 and chip_counter < NUM_CHIPS-1 then
-                            chip_counter <= chip_counter + 1;
-                            processor_fsm_state <= SendCommand;
-                        elsif hybrid_counter < NUM_HYBRIDS-1 then
-                            if read = '1' then
-                                all_done <= '0';
-                                status_data_ready <= '1';
-                                processor_fsm_state <= WaitForProcessed;
-                            else 
-                                processor_fsm_state <= SendCommand;
-                            end if;                        
-                            chip_counter <= 0;
-                            hybrid_counter <= hybrid_counter + 1;
-                        else
-                            if read = '1' then
-                                all_done <= '1';
-                                status_data_ready <= '1';
-                                processor_fsm_state <= WaitForProcessed;
-                            else 
-                                processor_fsm_state <= Finished;
-                            end if;
-                        end if;     
-                    else
-                        -- status changed during execution
-                        status_error <= x"12";
-                    end if;
-                else
-                    status_error <= i2c_reply.cmd_data;
-                    processor_fsm_state <= Finished;
+            status_processor_fsm <= x"1";
+            if command_from_ipbus /= command_from_ipbus_loc then
+                processor_fsm_error <= x"00";
+                status_last_command <= command_from_ipbus;
+                command_from_ipbus_loc <= command_from_ipbus;
+                ipbus_command_type_loc <= ipbus_command_type;
+                if ipbus_command_type = I2C then
+                    i2c_command     <= command_from_ipbus;
+                    hybrid_id       <= command_in(0)(10 downto 6);
+                    chip_id         <= command_in(0)(5 downto 2);
+                    read            <= command_in(0)(1);
+                    page            <= command_in(0)(0);
+                    register_address<= command_in(1)(23 downto 16);
+                    write_mask      <= command_in(1)(15 downto 8);
+                    data_to_chip    <= command_in(1)(7 downto 0);
                 end if;
-            end if;
-        when WaitForProcessed =>
-            status_fsm <= x"4";
-            if status_data_processed = temp_hybrid_id and all_done = '1' then 
-                status_data_ready <= '0';               
-                processor_fsm_state <= Finished;
-            elsif status_data_processed = temp_hybrid_id then
-                status_data_ready <= '0';
-                chip_data <= (others => (others => '0'));
                 processor_fsm_state <= SendCommand;
-            end if;
-        when Finished =>
-            status_fsm <= x"5";
-            -- execution finished
-            processor_fsm_state <= Idle;
+            end if;  
+        when SendCommand =>
+            status_processor_fsm <= x"2";
+            case ipbus_command_type_loc is
+                when None =>
+                    processor_fsm_state <= Idle;
+                when Unknown =>
+                    -- unknown command
+                    processor_fsm_error <= x"11";
+                    processor_fsm_state <= Idle;
+                when I2C =>
+                    -- wait for previous command to be finished
+                    if i2c_fsm_status = x"1" and i2c_execution_finished = '0' then
+                        start_sending_i2c <= not start_sending_i2c;
+                        processor_fsm_state <= WaitForFinished;
+                    end if;
+                when others =>
+                    -- case statement exeception
+                    processor_fsm_error <= x"1e";
+                    processor_fsm_state <= Idle;
+            end case;
+        when WaitForFinished =>
+            status_processor_fsm <= x"3";
+            case ipbus_command_type_loc is
+                when I2C =>
+                    if i2c_execution_finished = '1' then
+                        -- will be zero if no error
+                        processor_fsm_error <= i2c_fsm_error;
+                        processor_fsm_state <= Idle;
+                    end if;
+                when others =>
+                    -- case statement exeception
+                    processor_fsm_error <= x"1e";
+                    processor_fsm_state <= Idle;
+            end case;                 
         when others =>
-            status_fsm <= x"f";
-            -- fsm in a wrong state
-            status_error <= x"1f";
-            processor_fsm_state <= Idle;
+            -- wring fsm state
+            processor_fsm_error <= x"1f";
+            processor_fsm_state <= Idle;        
     end case;
+    end if;
+end process;
+
+ERROR_HANDLER: process(reset, clk)
+begin
+    if reset = '1' then
+       status_error_block_id <= x"0";
+       status_error_code <= x"00"; 
+    elsif rising_edge(clk) then
+        if processor_fsm_error /= x"00" then
+            status_error_block_id <= x"1";
+            status_error_code <= processor_fsm_error;
+        else
+            status_error_block_id <= x"0";
+            status_error_code <= x"00";  
+        end if;    
     end if;
 end process;
 

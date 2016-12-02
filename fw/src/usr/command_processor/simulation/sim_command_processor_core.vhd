@@ -21,7 +21,6 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.cmdbus.all;
 use work.user_package.all;
 use work.system_package.all;
 

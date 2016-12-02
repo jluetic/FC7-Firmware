@@ -8,7 +8,6 @@ use work.system_package.all;
 --! user packages
 use work.user_package.all;
 use work.user_version_package.all;
-use work.cmdbus.all;
 
 library unisim;
 use unisim.vcomponents.all;

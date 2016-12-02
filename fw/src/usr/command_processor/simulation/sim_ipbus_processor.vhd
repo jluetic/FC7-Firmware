@@ -51,7 +51,7 @@ begin
 response_process: process (clk)
 begin
     if rising_edge(clk) then
-        if status_in(15) = '1' then
+        if status_in(11) = '1' then
             if counter = '0' then
                 data_processed <= "00000";
                 counter <= '1';
