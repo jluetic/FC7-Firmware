@@ -22,6 +22,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use ieee.std_logic_unsigned.all;
+use work.user_package.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -40,18 +41,14 @@ entity fast_command_core is
     clk_40MHz             : in std_logic;
     l1_trigger_in         : in std_logic;
     reset                 : in std_logic;
-    -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter)
-    trigger_control_in    : in std_logic_vector(31 downto 0);
-    -- output trigger frequency divider
-    trigger_divider_in    : in std_logic_vector(31 downto 0);
-    -- number of triggers to accept
-    triggers_to_accept_in       : in std_logic_vector(31 downto 0);
-    -- hybrid mask
-    trigger_hybrid_mask_in       : in std_logic_vector(31 downto 0);
+    -- control bus from Command Processor Block
+    control_in            : in cmd_to_fastbus;
     -- stubs from hybrids
     in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
-    -- trigger status register output (31-28 - source, 27-24 - state, 23-20 - error code)
-    trigger_status_out    : out std_logic_vector(31 downto 0);
+    -- trigger status register output (3-2 - source, 1-0 - state)
+    trigger_status_out    : out std_logic_vector(7 downto 0);
+    -- fast command block error
+    error_code            : out std_logic_vector(7 downto 0);
     -- output trigger to Hybrids
     trigger_out           : out std_logic
   );
@@ -67,14 +64,13 @@ architecture rtl of fast_command_core is
     signal ones_mask                : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
     
     signal trigger_source           : std_logic_vector(3 downto 0);
-    signal trigger_state            : std_logic_vector(3 downto 0);
+    signal trigger_mode             : std_logic_vector(3 downto 0);
     signal user_trigger             : std_logic;
     signal user_trigger_selector             : std_logic;
     signal stubs_trigger            : std_logic;
     -- accept N triggers related signals
     signal counter                  : std_logic_vector(31 downto 0) := (others => '0');
-    signal reset_counter            : std_logic := trigger_control_in(23);
-    signal reset_counter_loc        : std_logic := trigger_control_in(23);
+    signal reset_counter            : std_logic;
     
     -- trigger checker counter
     signal trigger_checker          : std_logic_vector(31 downto 0) := (others => '0');
@@ -82,24 +78,22 @@ architecture rtl of fast_command_core is
     signal counter_prev             : std_logic_vector(31 downto 0) := (others => '0');
     
     -- status signals
-    signal status_source            : std_logic_vector(3 downto 0) := "0000";
-    signal status_state            : std_logic_vector(3 downto 0) := "0000";
-    signal status_error            : std_logic_vector(3 downto 0) := "0000";
-
+    signal status_source            : std_logic_vector(1 downto 0) := "00";
+    signal status_mode             : std_logic_vector(1 downto 0) := "00";
 
 begin
 
-    trigger_source <= trigger_control_in(31 downto 28);
-    trigger_state <= trigger_control_in(27 downto 24);
-    reset_counter <= trigger_control_in(23);
-    hybrid_mask_inv <= not trigger_hybrid_mask_in(NUM_HYBRIDS-1 downto 0);
+    trigger_source <= control_in.trigger_source;
+    trigger_mode <= control_in.trigger_mode;
+    reset_counter <= control_in.reset_counter;
+    hybrid_mask_inv <= not control_in.stubs_mask(NUM_HYBRIDS-1 downto 0);
     stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
-    user_trigger_selector <= '1' when TO_INTEGER(unsigned(trigger_divider_in)) > 1 else '0';
+    user_trigger_selector <= '1' when control_in.divider > 1 else '0';
     
     -- status
-    trigger_status_out(31 downto 28) <= status_source;
-    trigger_status_out(27 downto 24) <= status_state;
-    trigger_status_out(23 downto 20) <= status_error;
+    trigger_status_out(7 downto 4) <= x"0";
+    trigger_status_out(3 downto 2) <= status_source;
+    trigger_status_out(1 downto 0) <= status_mode;
 
 
 --===================================--
@@ -109,7 +103,7 @@ port map
 (
     i_clk           => clk_40MHz,
     i_rst           => reset,
-    i_clk_divider   => trigger_divider_in,
+    i_clk_divider   => std_logic_vector(to_unsigned(control_in.divider,32)),
     o_clk           => user_trigger
 );             
 --===================================--
@@ -188,23 +182,23 @@ port map (
 SOURCE_PROCESS: process (reset, clk_40MHz)
 begin
     if reset = '1' then
-        status_source <= x"0";
+        status_source <= "00";
         trigger_source_prev <= trigger_source;
     elsif rising_edge(clk_40MHz) then
         trigger_checker <= trigger_checker + 1;
     case trigger_source is
         -- spread L1-Trigger as trigger
         when x"1" =>
-            status_source <= x"1";
+            status_source <= "01";
         -- triggers using stubs from the hybrids, could be coincidence
         when x"2" =>
-            status_source <= x"2";
+            status_source <= "10";
         -- trigger with defined user frequency <= 40MHz
         when x"3" =>
-            status_source <= x"3";
+            status_source <= "11";
         -- no triggers
         when others =>
-            status_source <= x"0";
+            status_source <= "00";
     end case;
         if trigger_source /= trigger_source_prev then
             trigger_source_prev <= trigger_source;
@@ -218,50 +212,55 @@ STATE_PROCESS: process (reset, clk_40MHz)
 begin
     if reset = '1' then
        clock_enable <= '0';
-       status_state <= x"0"; 
-       status_error <= x"0";
+       status_mode <= "00"; 
+       error_code <= x"00";
     elsif rising_edge(clk_40MHz) then
-    case trigger_state is
+    case trigger_mode is
         -- Idle
         when x"0" =>
             clock_enable <= '0';
-            status_state <= x"0";
-            status_error <= x"0";             
+            status_mode <= "00";
+            error_code <= x"00";             
         -- Continuous Triggering
         when x"1" =>
             clock_enable <= '1';
-            status_state <= x"1";
-            status_error <= x"0";
+            status_mode <= "01";
+            error_code <= x"00";
         -- Accept N Triggers, then stop    
         when x"2" =>            
-            if TO_INTEGER(unsigned(counter)) <= TO_INTEGER(unsigned(triggers_to_accept_in)) then
+            if TO_INTEGER(unsigned(counter)) <= control_in.triggers_to_accept then
                 clock_enable <= '1';
-                status_state <= x"2";
-                status_error <= x"0";
+                status_mode <= "10";
+                error_code <= x"00";
             else
                 clock_enable <= '0';
-                status_state <= x"3";
-                status_error <= x"0";
+                status_mode <= "11";
+                error_code <= x"00";
             end if;
         when others =>
             clock_enable <= '0';
-            status_state <= x"0"; 
-            status_error <= x"1";             
+            status_mode <= "00";
+            -- unknown mode 
+            error_code <= x"01";             
     end case;
+        if to_integer(unsigned(trigger_source)) > 3 then
+            -- unknown source
+            error_code <= x"02";
+        end if;
         -- if no trigger for 10s => bye bye
         --if TO_INTEGER(unsigned(trigger_checker)) >= 10 and counter = counter_prev then
-        if trigger_state /= x"0" and TO_INTEGER(unsigned(trigger_checker)) >= 400_000_000 and counter = counter_prev then
+        if trigger_mode /= x"0" and TO_INTEGER(unsigned(trigger_checker)) >= 400_000_000 and counter = counter_prev then
             clock_enable <= '0';
-            status_state <= x"0"; 
-            status_error <= x"2";
+            status_mode <= "00"; 
+            -- no triggers
+            error_code <= x"03";
         end if;
     end if;
 end process;
 
 COUNTER_PROCESS: process(reset_counter, trigger_i)
 begin
-    if reset_counter /= reset_counter_loc then
-        reset_counter_loc <= reset_counter;
+    if reset_counter = '1' then
         counter <= (others => '0');
     elsif rising_edge(trigger_i) then
         counter <= counter + 1;

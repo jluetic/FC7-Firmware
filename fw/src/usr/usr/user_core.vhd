@@ -168,17 +168,30 @@ architecture usr of user_core is
     signal ipb_clk					: std_logic;
     signal ctrl_reg                 : array_32x32bit;
     signal stat_reg                 : array_32x32bit;
-    signal command_in               : array_2x32bit;
+    
+    --===================================--
+    -- Command Processor Block Signals
+    --===================================--
+    signal command_in               : array_4x32bit;
     signal stat_chips_data          : array_4x32bit;
-    -- I2C command lines from Fast Command Block to PHY and back
+    -- I2C command lines from Command Processor Block to PHY and back
     signal i2c_request              : cmd_wbus;
     signal i2c_reply                : cmd_rbus;
-    
+    -- Control bus from Command Processor Block to Fast Command Block
+    signal fast_block_control       : cmd_to_fastbus;
+    -- used to use status bus with two blocks
+    signal status_buf               : std_logic_vector(31 downto 0) := (others => '0');
+    --===================================--
+   
+    --===================================--
+    -- Fast Command Block Signals
+    --===================================--
     -- Trigger Signal from Fast Command Block
-    signal trigger_out              : std_logic;
-    
+    signal trigger_out              : std_logic;    
     -- Stubs From Hybrids
     signal hybrid_stubs             : std_logic_vector(NUM_HYBRIDS downto 1);
+    signal fast_block_error         : std_logic_vector(7 downto 0);
+    --===================================--
 
 begin
 
@@ -235,12 +248,15 @@ begin
     --===================================--
     -- Block responsible for I2C command processing. Is connected to: fast command block, hybrids.
     --===================================--
-    command_in(0) <= ctrl_reg(4);
-    command_in(1) <= ctrl_reg(5);
-    stat_reg(2)   <= stat_chips_data(0);
-    stat_reg(3)   <= stat_chips_data(1);
-    stat_reg(4)   <= stat_chips_data(2);
-    stat_reg(5)   <= stat_chips_data(3);
+    command_in(0) <= ctrl_reg(0);
+    command_in(1) <= ctrl_reg(1);
+    command_in(2) <= ctrl_reg(2);
+    command_in(3) <= ctrl_reg(3);
+    stat_reg(1)   <= stat_chips_data(0);
+    stat_reg(2)   <= stat_chips_data(1);
+    stat_reg(3)   <= stat_chips_data(2);
+    stat_reg(4)   <= stat_chips_data(3);
+    stat_reg(0)(31 downto 8) <= status_buf(31 downto 8);
     command_processor_block: entity work.command_processor_core
     --===================================--
     generic map
@@ -257,10 +273,14 @@ begin
         -- should be output command register
         i2c_request     => i2c_request,
         i2c_reply       => i2c_reply,
+        -- fast command block control line
+        cmd_fast_block  => fast_block_control,
         -- status back using IpBus
-        status_out      => stat_reg(1),
+        status_out      => status_buf,
         -- 8 chips data back
-        status_data     => stat_chips_data
+        status_data     => stat_chips_data,
+        -- errors from other blocks
+        error_fast_block=> fast_block_error
     );        
     --===================================--    
     phy_answer_generator: entity work.answer_block
@@ -282,18 +302,14 @@ begin
         clk_40Mhz               => clk_40MHz,
         l1_trigger_in           => '0',
         reset                   => '0',
-        -- trigger control register input (31-28 - source, 27-24 - state, 23 - reset_counter)
-        trigger_control_in      => ctrl_reg(0),
-        -- output trigger frequency divider
-        trigger_divider_in      => ctrl_reg(1),
-        -- number of triggers to accept
-        triggers_to_accept_in   => ctrl_reg(2),
-        -- hybrid mask                                                  
-        trigger_hybrid_mask_in  => ctrl_reg(3),
+        -- control bus from Command Processor Block
+        control_in              => fast_block_control,
         -- stubs from hybrids
         in_stubs                => hybrid_stubs,
-        -- trigger status register output (31-28 - source, 27-24 - state, 23-20 - error code)
-        trigger_status_out      => stat_reg(0),
+        -- trigger status register output (3-2 - source, 1-0 - state)
+        trigger_status_out      => stat_reg(0)(7 downto 0),
+        -- fast command block error
+        error_code              => fast_block_error,
         -- output trigger to Hybrids
         trigger_out             => trigger_out
     );        

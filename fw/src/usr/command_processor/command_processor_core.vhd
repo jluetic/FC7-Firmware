@@ -43,14 +43,18 @@ entity command_processor_core is
     clk             : in std_logic;
     reset           : in std_logic;    
     -- command from IpBus
-    command_in      : in array_2x32bit;
+    command_in      : in array_4x32bit;
     -- output command
     i2c_request     : out cmd_wbus;
     i2c_reply	    : in cmd_rbus;
+    -- fast command block control line
+    cmd_fast_block  : out cmd_to_fastbus;
     -- status back using IpBus
     status_out      : out std_logic_vector(31 downto 0);
     -- 8 chips data back
-    status_data     : out array_4x32bit
+    status_data     : out array_4x32bit;
+    -- errors from other blocks
+    error_fast_block: in std_logic_vector(7 downto 0)
   );
 end command_processor_core;
 
@@ -97,7 +101,7 @@ architecture rtl of command_processor_core is
     --==========================--
     type state_type is (Idle, SendCommand, WaitForFinished);
     signal processor_fsm_state    : state_type := Idle;
-    signal processor_fsm_error         : std_logic_vector(7 downto 0) := (others => '0');
+    signal error_command_block         : std_logic_vector(7 downto 0) := (others => '0');
     signal start_sending_i2c          : std_logic := '0';
     --==========================--
     
@@ -189,7 +193,7 @@ begin
         command_from_ipbus_loc <= command_from_ipbus;
         ipbus_command_type_loc <= ipbus_command_type;
         
-        processor_fsm_error <= x"00";
+        error_command_block <= x"00";
         processor_fsm_state <= Idle;        
         status_processor_fsm <= x"1";
 
@@ -201,14 +205,22 @@ begin
         page                <= '0';
         register_address    <= (others => '0');
         write_mask          <= (others => '0');
-        data_to_chip        <= (others => '0');   
+        data_to_chip        <= (others => '0');
         
+        -- fast command resetter   
+        cmd_fast_block.trigger_source     <= x"0";
+        cmd_fast_block.trigger_mode       <= x"0";
+        cmd_fast_block.triggers_to_accept <= 1;
+        cmd_fast_block.divider            <= 1;
+        cmd_fast_block.stubs_mask         <= x"00000000";
+        cmd_fast_block.reset_counter      <= '0';          
     elsif rising_edge(clk) then
     case processor_fsm_state is
         when Idle =>
+            cmd_fast_block.reset_counter      <= '0';
             status_processor_fsm <= x"1";
             if command_from_ipbus /= command_from_ipbus_loc then
-                processor_fsm_error <= x"00";
+                error_command_block <= x"00";
                 status_last_command <= command_from_ipbus;
                 command_from_ipbus_loc <= command_from_ipbus;
                 ipbus_command_type_loc <= ipbus_command_type;
@@ -221,6 +233,18 @@ begin
                     register_address<= command_in(1)(23 downto 16);
                     write_mask      <= command_in(1)(15 downto 8);
                     data_to_chip    <= command_in(1)(7 downto 0);
+                elsif ipbus_command_type = Fast then
+                    if command_from_ipbus = x"9" then
+                        cmd_fast_block.trigger_source     <= command_in(0)(7 downto 4);
+                        cmd_fast_block.trigger_mode       <= command_in(0)(3 downto 0);
+                        cmd_fast_block.triggers_to_accept <= TO_INTEGER(unsigned(command_in(1)));
+                        cmd_fast_block.divider            <= TO_INTEGER(unsigned(command_in(2)));
+                        cmd_fast_block.stubs_mask         <= command_in(3);
+                    else
+                        -- wrong command
+                        error_command_block <= x"41";
+                        processor_fsm_state <= Idle;                        
+                    end if;
                 end if;
                 processor_fsm_state <= SendCommand;
             end if;  
@@ -231,7 +255,7 @@ begin
                     processor_fsm_state <= Idle;
                 when Unknown =>
                     -- unknown command
-                    processor_fsm_error <= x"11";
+                    error_command_block <= x"11";
                     processor_fsm_state <= Idle;
                 when I2C =>
                     -- wait for previous command to be finished
@@ -239,9 +263,19 @@ begin
                         start_sending_i2c <= not start_sending_i2c;
                         processor_fsm_state <= WaitForFinished;
                     end if;
+                when Fast =>
+                    -- change trigger source/mode/frequency
+                    if command_from_ipbus_loc = x"9" then
+                        cmd_fast_block.reset_counter      <= '1';
+                        processor_fsm_state <= Idle;
+                    else
+                        -- wrong command
+                        error_command_block <= x"41";
+                        processor_fsm_state <= Idle;                        
+                    end if;    
                 when others =>
                     -- case statement exeception
-                    processor_fsm_error <= x"1e";
+                    error_command_block <= x"1e";
                     processor_fsm_state <= Idle;
             end case;
         when WaitForFinished =>
@@ -250,17 +284,17 @@ begin
                 when I2C =>
                     if i2c_execution_finished = '1' then
                         -- will be zero if no error
-                        processor_fsm_error <= i2c_fsm_error;
+                        error_command_block <= i2c_fsm_error;
                         processor_fsm_state <= Idle;
                     end if;
                 when others =>
                     -- case statement exeception
-                    processor_fsm_error <= x"1e";
+                    error_command_block <= x"1e";
                     processor_fsm_state <= Idle;
             end case;                 
         when others =>
-            -- wring fsm state
-            processor_fsm_error <= x"1f";
+            -- wrong fsm state
+            error_command_block <= x"1f";
             processor_fsm_state <= Idle;        
     end case;
     end if;
@@ -272,9 +306,12 @@ begin
        status_error_block_id <= x"0";
        status_error_code <= x"00"; 
     elsif rising_edge(clk) then
-        if processor_fsm_error /= x"00" then
+        if error_command_block /= x"00" then
             status_error_block_id <= x"1";
-            status_error_code <= processor_fsm_error;
+            status_error_code <= error_command_block;
+        elsif error_fast_block /= x"00" then
+            status_error_block_id <= x"2";
+            status_error_code <= error_fast_block;
         else
             status_error_block_id <= x"0";
             status_error_code <= x"00";  

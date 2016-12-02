@@ -5,17 +5,17 @@
    <db_ref_list>
       <db_ref path="sim_fast_command_core_behav.wdb" id="1">
          <top_modules>
-            <top_module name="cmdbus" />
             <top_module name="sim_fast_command_core" />
+            <top_module name="user_package" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="1226000002fs"></ZoomEndTime>
-      <Cursor1Time time="1000000000fs"></Cursor1Time>
+      <ZoomStartTime time="1480000000fs"></ZoomStartTime>
+      <ZoomEndTime time="2093000001fs"></ZoomEndTime>
+      <Cursor1Time time="1863000000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="13" />
+   <WVObjectSize size="14" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
@@ -40,6 +40,10 @@
       <obj_property name="ElementShortName">counter[31:0]</obj_property>
       <obj_property name="ObjectShortName">counter[31:0]</obj_property>
    </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/reset_counter">
+      <obj_property name="ElementShortName">reset_counter</obj_property>
+      <obj_property name="ObjectShortName">reset_counter</obj_property>
+   </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/counter_prev">
       <obj_property name="ElementShortName">counter_prev[31:0]</obj_property>
       <obj_property name="ObjectShortName">counter_prev[31:0]</obj_property>
@@ -48,24 +52,24 @@
       <obj_property name="ElementShortName">hybrid_mask_inv[1:1]</obj_property>
       <obj_property name="ObjectShortName">hybrid_mask_inv[1:1]</obj_property>
    </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_checker">
+      <obj_property name="ElementShortName">trigger_checker[31:0]</obj_property>
+      <obj_property name="ObjectShortName">trigger_checker[31:0]</obj_property>
+   </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/status_source">
-      <obj_property name="ElementShortName">status_source[3:0]</obj_property>
-      <obj_property name="ObjectShortName">status_source[3:0]</obj_property>
+      <obj_property name="ElementShortName">status_source[1:0]</obj_property>
+      <obj_property name="ObjectShortName">status_source[1:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/status_state">
-      <obj_property name="ElementShortName">status_state[3:0]</obj_property>
-      <obj_property name="ObjectShortName">status_state[3:0]</obj_property>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/status_mode">
+      <obj_property name="ElementShortName">status_mode[1:0]</obj_property>
+      <obj_property name="ObjectShortName">status_mode[1:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/status_error">
-      <obj_property name="ElementShortName">status_error[3:0]</obj_property>
-      <obj_property name="ObjectShortName">status_error[3:0]</obj_property>
+   <wvobject type="array" fp_name="/sim_fast_command_core/trigger_mode">
+      <obj_property name="ElementShortName">trigger_mode[3:0]</obj_property>
+      <obj_property name="ObjectShortName">trigger_mode[3:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_source">
       <obj_property name="ElementShortName">trigger_source[3:0]</obj_property>
       <obj_property name="ObjectShortName">trigger_source[3:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_checker">
-      <obj_property name="ElementShortName">trigger_checker[31:0]</obj_property>
-      <obj_property name="ObjectShortName">trigger_checker[31:0]</obj_property>
    </wvobject>
 </wave_config>

@@ -21,7 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.cmdbus.all;
+use work.user_package.all;
 
 
 -- Uncomment the following library declaration if using
@@ -47,18 +47,14 @@ Port (
 clk_40MHz             : in std_logic;
 l1_trigger_in         : in std_logic;
 reset                 : in std_logic;
--- trigger control register input
-trigger_control_in    : in std_logic_vector(31 downto 0);
--- output trigger frequency divider
-trigger_divider_in    : in std_logic_vector(31 downto 0);
--- number of triggers to accept
-triggers_to_accept_in       : in std_logic_vector(31 downto 0);
--- hybrid mask
-trigger_hybrid_mask_in       : in std_logic_vector(31 downto 0);
+-- control bus from Command Processor Block
+control_in            : in cmd_to_fastbus;
 -- stubs from hybrids
 in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
--- trigger status register output
-trigger_status_out    : out std_logic_vector(31 downto 0);
+-- trigger status register output (3-2 - source, 1-0 - state)
+trigger_status_out    : out std_logic_vector(3 downto 0);
+-- fast command block error
+error_code            : out std_logic_vector(7 downto 0);
 -- output trigger to Hybrids
 trigger_out          : out std_logic
 );
@@ -72,15 +68,21 @@ signal clk_40MHz : std_logic;
 signal clk_lhc : std_logic;
 signal NUM_HYBRIDS : integer := 1;
 signal in_stubs : std_logic_vector(NUM_HYBRIDS downto 1) := "0";
-signal trigger_control_in : std_logic_vector(31 downto 0) := x"11_00_00_00";
-signal trigger_divider_in : std_logic_vector(31 downto 0) := x"00_00_00_04";
-signal triggers_to_accept_in : std_logic_vector(31 downto 0) := x"00_00_00_0A";
-signal trigger_hybrid_mask_in : std_logic_vector(31 downto 0) := x"00_00_00_01";
+signal trigger_control_in : cmd_to_fastbus;
+
+signal trigger_source : std_logic_vector(3 downto 0) := x"0";
+signal trigger_mode : std_logic_vector(3 downto 0) := x"0";
 
 begin
 
+    trigger_control_in.trigger_source     <= trigger_source;
+    trigger_control_in.trigger_mode       <= trigger_mode;
+    trigger_control_in.triggers_to_accept <= 10;
+    trigger_control_in.divider            <= 4;
+    trigger_control_in.stubs_mask         <= x"00000003";
+
     UUT: fast_command_core generic map (NUM_HYBRIDS)
-    port map(clk_40MHz, clk_lhc, '0', trigger_control_in, trigger_divider_in, triggers_to_accept_in, trigger_hybrid_mask_in, in_stubs, open, open);
+    port map(clk_40MHz, clk_lhc, '0', trigger_control_in, in_stubs, open, open);
     
     clk40_process: process
     begin
@@ -100,17 +102,20 @@ begin
 
     restart_process: process
     begin
-        trigger_control_in <= x"11_00_00_00";
+        trigger_source <= x"1";
+        trigger_mode <= x"1";
         wait for 500 ns;
-        trigger_control_in <= x"21_00_00_00";
+        trigger_source <= x"2";
         wait for 500 ns;
-        trigger_control_in <= x"31_00_00_00";
+        trigger_source <= x"3";
         wait for 500 ns;
-        trigger_control_in <= x"00_00_00_00";
+        trigger_source <= x"0";
         wait for 100 ns;
-        trigger_control_in <= x"12_00_00_00";
-        wait for 20 ns;
-        trigger_control_in(23) <= not trigger_control_in(23);        
+        trigger_source <= x"1";
+        trigger_mode <= x"2";
+        trigger_control_in.reset_counter <= '1';
+        wait for 25 ns;
+        trigger_control_in.reset_counter <= '0';        
         wait for 500 ns;
     end process;
 

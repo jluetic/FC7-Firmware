@@ -1,60 +1,58 @@
 *
 user_ipb_stat_regs		40000000    ffffffff     1     1
 
-status_trigger			40000000    ffffffff     1     0
-    status_trigger_source	40000000    f0000000     1     0
-    status_trigger_state	40000000    0f000000     1     0
-    status_trigger_error	40000000    00f00000     1     0
+status_command_block		40000000    ffffffff     1     0
+    status_cmd_command          40000000    f0000000     1     0
+    status_cmd_fsm              40000000    0f000000     1     0
+    status_cmd_error_block_id   40000000    00f00000     1     0
+    status_cmd_error_code       40000000    000ff000     1     0
+    status_cmd_data_ready       40000000    00000800     1     0
+    status_trigger_source       40000000    0000000c     1     0
+    status_trigger_mode         40000000    00000003     1     0
 
-status_command_block		40000001    ffffffff     1     0
-    status_cmd_command          40000001    f0000000     1     0
-    status_cmd_fsm              40000001    0f000000     1     0
-    status_cmd_error_block_id   40000001    00f00000     1     0
-    status_cmd_error_code       40000001    000ff000     1     0
-    status_cmd_data_ready       40000001    00000800     1     0
-
-status_data_0                   40000002    ffffffff     1     0
-    chip_data_0                 40000002    000000ff     1     0
-    chip_data_1                 40000002    0000ff00     1     0
-    chip_data_2                 40000002    00ff0000     1     0
-    chip_data_3                 40000002    ff000000     1     0
-status_data_1                   40000003    ffffffff     1     0
-    chip_data_4                 40000003    000000ff     1     0
-    chip_data_5                 40000003    0000ff00     1     0
-    chip_data_6                 40000003    00ff0000     1     0
-    chip_data_7                 40000003    ff000000     1     0
-status_data_2                   40000004    ffffffff     1     0
-    chip_data_8                 40000004    000000ff     1     0
-    chip_data_9                 40000004    0000ff00     1     0
-    chip_data_10                40000004    00ff0000     1     0
-    chip_data_11                40000004    ff000000     1     0
-status_data_3                   40000005    ffffffff     1     0
-    chip_data_12                40000005    000000ff     1     0
-    chip_data_13                40000005    0000ff00     1     0
-    chip_data_14                40000005    00ff0000     1     0
-    chip_data_15                40000005    ff000000     1     0
+status_data_0                   40000001    ffffffff     1     0
+    chip_data_0                 40000001    000000ff     1     0
+    chip_data_1                 40000001    0000ff00     1     0
+    chip_data_2                 40000001    00ff0000     1     0
+    chip_data_3                 40000001    ff000000     1     0
+status_data_1                   40000002    ffffffff     1     0
+    chip_data_4                 40000002    000000ff     1     0
+    chip_data_5                 40000002    0000ff00     1     0
+    chip_data_6                 40000002    00ff0000     1     0
+    chip_data_7                 40000002    ff000000     1     0
+status_data_2                   40000003    ffffffff     1     0
+    chip_data_8                 40000003    000000ff     1     0
+    chip_data_9                 40000003    0000ff00     1     0
+    chip_data_10                40000003    00ff0000     1     0
+    chip_data_11                40000003    ff000000     1     0
+status_data_3                   40000004    ffffffff     1     0
+    chip_data_12                40000004    000000ff     1     0
+    chip_data_13                40000004    0000ff00     1     0
+    chip_data_14                40000004    00ff0000     1     0
+    chip_data_15                40000004    ff000000     1     0
 	
 user_ipb_ctrl_regs		40000040    ffffffff     1     1
 
-trigger_control			40000040    ffffffff     1     1
-    trigger_source 		40000000    f0000000     1     1
-    trigger_state		40000000    0f000000     1     1
+command_processor_cmd_in1	40000040    ffffffff     1     1
+    command                     40000040    f0000000     1     1
+    data_processed              40000040    0000f800     1     1
+    i2c_hybrid_id               40000040    000007c0     1     1
+    i2c_chip_id                 40000040    0000003c     1     1
+    i2c_read                    40000040    00000002     1     1
+    i2c_page                    40000040    00000001     1     1
+    trigger_source 		40000040    000000f0     1     1
+    trigger_mode		40000040    0000000f     1     1
+command_processor_cmd_in2	40000041    ffffffff     1     1
+    triggers_to_accept  	40000041    ffffffff     1     1
+    i2c_register_address        40000041    00ff0000     1     1
+    i2c_write_mask              40000041    0000ff00     1     1
+    i2c_data                    40000041    000000ff     1     1
+command_processor_cmd_in3	40000042    ffffffff     1     1
+    trigger_divider     	40000042    ffffffff     1     1
+command_processor_cmd_in4	40000043    ffffffff     1     1
+    trigger_stubs_mask  	40000043    ffffffff     1     1
 
-trigger_divider			40000041    ffffffff     1     1
-trigger_accept_n		40000042    ffffffff     1     1
-trigger_hybrid_mask		40000043    ffffffff     1     1
 
-command_processor_cmd_in1	40000044    ffffffff     1     1
-    command                     40000044    f0000000     1     1
-    data_processed              40000044    0000f800     1     1
-    i2c_hybrid_id               40000044    000007c0     1     1
-    i2c_chip_id                 40000044    0000003c     1     1
-    i2c_read                    40000044    00000002     1     1
-    i2c_page                    40000044    00000001     1     1
-command_processor_cmd_in2	40000045    ffffffff     1     1
-    i2c_register_address        40000045    00ff0000     1     1
-    i2c_write_mask              40000045    0000ff00     1     1
-    i2c_data                    40000045    000000ff     1     1
 
 
 *
