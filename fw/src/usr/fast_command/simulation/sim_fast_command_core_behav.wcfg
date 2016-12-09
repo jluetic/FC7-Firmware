@@ -11,11 +11,11 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="1480000000fs"></ZoomStartTime>
-      <ZoomEndTime time="2093000001fs"></ZoomEndTime>
-      <Cursor1Time time="1863000000fs"></Cursor1Time>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="1226000001fs"></ZoomEndTime>
+      <Cursor1Time time="374000000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="14" />
+   <WVObjectSize size="15" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
@@ -71,5 +71,9 @@
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_source">
       <obj_property name="ElementShortName">trigger_source[3:0]</obj_property>
       <obj_property name="ObjectShortName">trigger_source[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/error_code">
+      <obj_property name="ElementShortName">error_code[7:0]</obj_property>
+      <obj_property name="ObjectShortName">error_code[7:0]</obj_property>
    </wvobject>
 </wave_config>

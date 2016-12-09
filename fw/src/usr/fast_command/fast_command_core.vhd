@@ -248,7 +248,7 @@ begin
             error_code <= x"02";
         end if;
         -- if no trigger for 10s => bye bye
-        --if TO_INTEGER(unsigned(trigger_checker)) >= 10 and counter = counter_prev then
+        --if trigger_mode /= x"0" and TO_INTEGER(unsigned(trigger_checker)) >= 10 and counter = counter_prev then
         if trigger_mode /= x"0" and TO_INTEGER(unsigned(trigger_checker)) >= 400_000_000 and counter = counter_prev then
             clock_enable <= '0';
             status_mode <= "00"; 
