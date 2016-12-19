@@ -11,7 +11,8 @@ package user_package is
 	constant user_ipb_stat_regs		: integer  := 0 ;
 	constant user_ipb_ctrl_regs		: integer  := 1 ;
 	
-	constant max_ntriggers_to_accept : integer := 1_000_000;
+	constant MAX_NTRIGGERS_TO_ACCEPT : integer := 1_000_000;
+	constant MAX_TRIGGER_DIVIDER     : integer := 400_000_000;
 
 
 	type array_8x8bit  is array  (0 to  7) of std_logic_vector(7 downto 0);
@@ -66,16 +67,16 @@ package user_package is
     -- Bus From Command Processor to Fast Command Block
     type cmd_to_fastbus is
     record
+      -- strobe when new control signal arrived
+      cmd_strobe            : std_logic;
       -- source of the trigger signal
       trigger_source        : std_logic_vector(3 downto 0);
       -- trigger operation mode
       trigger_mode          : std_logic_vector(3 downto 0);
-      -- reset counter
-      reset_counter         : std_logic;
       -- number of trigger to accept
-      triggers_to_accept    : integer range 1 to max_ntriggers_to_accept;
+      triggers_to_accept    : integer range 1 to MAX_NTRIGGERS_TO_ACCEPT;
       -- trigger frequency divider, minimal frequency is 0.1Hz
-      divider               : integer range 1 to 400_000_000;
+      divider               : integer range 1 to MAX_TRIGGER_DIVIDER;
       -- stubs mask to get coincidence
       stubs_mask            : std_logic_vector(31 downto 0);
     end record;	

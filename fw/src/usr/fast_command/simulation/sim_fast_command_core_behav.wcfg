@@ -11,11 +11,11 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="1226000001fs"></ZoomEndTime>
-      <Cursor1Time time="374000000fs"></Cursor1Time>
+      <ZoomStartTime time="3589999999fs"></ZoomStartTime>
+      <ZoomEndTime time="4202000001fs"></ZoomEndTime>
+      <Cursor1Time time="1805500000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="15" />
+   <WVObjectSize size="14" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
@@ -44,36 +44,33 @@
       <obj_property name="ElementShortName">reset_counter</obj_property>
       <obj_property name="ObjectShortName">reset_counter</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/counter_prev">
-      <obj_property name="ElementShortName">counter_prev[31:0]</obj_property>
-      <obj_property name="ObjectShortName">counter_prev[31:0]</obj_property>
-   </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/hybrid_mask_inv">
       <obj_property name="ElementShortName">hybrid_mask_inv[1:1]</obj_property>
       <obj_property name="ObjectShortName">hybrid_mask_inv[1:1]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_checker">
-      <obj_property name="ElementShortName">trigger_checker[31:0]</obj_property>
-      <obj_property name="ObjectShortName">trigger_checker[31:0]</obj_property>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/error_code">
+      <obj_property name="ElementShortName">error_code[7:0]</obj_property>
+      <obj_property name="ObjectShortName">error_code[7:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/status_source">
-      <obj_property name="ElementShortName">status_source[1:0]</obj_property>
-      <obj_property name="ObjectShortName">status_source[1:0]</obj_property>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/control_in">
+      <obj_property name="ElementShortName">control_in</obj_property>
+      <obj_property name="ObjectShortName">control_in</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/status_mode">
-      <obj_property name="ElementShortName">status_mode[1:0]</obj_property>
-      <obj_property name="ObjectShortName">status_mode[1:0]</obj_property>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/clock_enable">
+      <obj_property name="ElementShortName">clock_enable</obj_property>
+      <obj_property name="ObjectShortName">clock_enable</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/trigger_mode">
-      <obj_property name="ElementShortName">trigger_mode[3:0]</obj_property>
-      <obj_property name="ObjectShortName">trigger_mode[3:0]</obj_property>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/triggering_done">
+      <obj_property name="ElementShortName">triggering_done</obj_property>
+      <obj_property name="ObjectShortName">triggering_done</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_source">
       <obj_property name="ElementShortName">trigger_source[3:0]</obj_property>
       <obj_property name="ObjectShortName">trigger_source[3:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/error_code">
-      <obj_property name="ElementShortName">error_code[7:0]</obj_property>
-      <obj_property name="ObjectShortName">error_code[7:0]</obj_property>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_mode">
+      <obj_property name="ElementShortName">trigger_mode[3:0]</obj_property>
+      <obj_property name="ObjectShortName">trigger_mode[3:0]</obj_property>
    </wvobject>
 </wave_config>

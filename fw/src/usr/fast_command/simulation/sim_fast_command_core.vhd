@@ -72,6 +72,8 @@ signal trigger_control_in : cmd_to_fastbus;
 
 signal trigger_source : std_logic_vector(3 downto 0) := x"0";
 signal trigger_mode : std_logic_vector(3 downto 0) := x"0";
+signal trigger_source_prev : std_logic_vector(3 downto 0) := x"0";
+signal trigger_mode_prev : std_logic_vector(3 downto 0) := x"0";
 
 begin
 
@@ -109,14 +111,22 @@ begin
         wait for 500 ns;
         trigger_source <= x"3";
         wait for 500 ns;
-        trigger_source <= x"0";
-        wait for 100 ns;
         trigger_source <= x"1";
         trigger_mode <= x"2";
-        trigger_control_in.reset_counter <= '1';
-        wait for 25 ns;
-        trigger_control_in.reset_counter <= '0';        
         wait for 500 ns;
+    end process;
+    
+    strobe_process: process(clk_40MHz)
+    begin
+        if rising_edge(clk_40MHz) then
+        if trigger_mode /= trigger_mode_prev or trigger_source /= trigger_source_prev then
+            trigger_mode_prev <= trigger_mode;
+            trigger_source_prev <= trigger_source;
+            trigger_control_in.cmd_strobe <= '1';
+        else
+            trigger_control_in.cmd_strobe <= '0';
+        end if;
+        end if;
     end process;
 
 end Behavioral;

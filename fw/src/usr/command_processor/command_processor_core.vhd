@@ -207,18 +207,18 @@ begin
         write_mask          <= (others => '0');
         data_to_chip        <= (others => '0');
         
-        -- fast command resetter   
+        -- fast command resetter
+        cmd_fast_block.cmd_strobe         <= '0';   
         cmd_fast_block.trigger_source     <= x"0";
         cmd_fast_block.trigger_mode       <= x"0";
         cmd_fast_block.triggers_to_accept <= 1;
         cmd_fast_block.divider            <= 1;
         cmd_fast_block.stubs_mask         <= x"00000000";
-        cmd_fast_block.reset_counter      <= '0';          
     elsif rising_edge(clk) then
     case processor_fsm_state is
         when Idle =>
-            cmd_fast_block.reset_counter      <= '0';
             status_processor_fsm <= x"1";
+            cmd_fast_block.cmd_strobe <= '0';
             if command_from_ipbus /= command_from_ipbus_loc then
                 error_command_block <= x"00";
                 status_last_command <= command_from_ipbus;
@@ -266,7 +266,7 @@ begin
                 when Fast =>
                     -- change trigger source/mode/frequency
                     if command_from_ipbus_loc = x"9" then
-                        cmd_fast_block.reset_counter      <= '1';
+                        cmd_fast_block.cmd_strobe <= '1';   
                         processor_fsm_state <= Idle;
                     else
                         -- wrong command
