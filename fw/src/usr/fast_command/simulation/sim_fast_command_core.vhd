@@ -47,16 +47,17 @@ Port (
 clk_40MHz             : in std_logic;
 l1_trigger_in         : in std_logic;
 reset                 : in std_logic;
--- control bus from Command Processor Block
-control_in            : in cmd_to_fastbus;
+-- control buses from Command Processor Block
+ctrl_fastblock_i      : in ctrl_fastblock;
+cnfg_fastblock_i      : in cnfg_fastblock;
 -- stubs from hybrids
 in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
 -- trigger status register output (3-2 - source, 1-0 - state)
-trigger_status_out    : out std_logic_vector(3 downto 0);
+trigger_status_out    : out std_logic_vector(7 downto 0);
 -- fast command block error
 error_code            : out std_logic_vector(7 downto 0);
--- output trigger to Hybrids
-trigger_out          : out std_logic
+-- output trigger to Hybrids (temporary, for tests)
+trigger_out           : out std_logic
 );
 end component;
 
@@ -64,27 +65,38 @@ constant clk40_period : time := 25 ns;
 constant clk160_period : time := 6.25 ns;
 constant clk_lhc_period : time := 23 ns;
 
+constant ctrl_fastblock_init0   : ctrl_fastblock := (cmd_strobe => '0',
+                                                     reset => '0',
+                                                     load_config => '0',
+                                                     start_trigger => '0',
+                                                     stop_trigger => '0',
+                                                     fast_signal_reset => '0',
+                                                     fast_signal_test_pulse => '0',
+                                                     fast_signal_trigger => '0',
+                                                     fast_signal_orbit_reset => '0');
+
 signal clk_40MHz : std_logic;
 signal clk_lhc : std_logic;
 signal NUM_HYBRIDS : integer := 1;
 signal in_stubs : std_logic_vector(NUM_HYBRIDS downto 1) := "0";
-signal trigger_control_in : cmd_to_fastbus;
+signal cnfg_fastblock_i : cnfg_fastblock;
+signal ctrl_fastblock_i : ctrl_fastblock := ctrl_fastblock_init0;
 
 signal trigger_source : std_logic_vector(3 downto 0) := x"0";
-signal trigger_mode : std_logic_vector(3 downto 0) := x"0";
 signal trigger_source_prev : std_logic_vector(3 downto 0) := x"0";
-signal trigger_mode_prev : std_logic_vector(3 downto 0) := x"0";
+
+signal trigger_start : std_logic := '0';
+signal trigger_start_prev : std_logic := '0';
 
 begin
 
-    trigger_control_in.trigger_source     <= trigger_source;
-    trigger_control_in.trigger_mode       <= trigger_mode;
-    trigger_control_in.triggers_to_accept <= 10;
-    trigger_control_in.divider            <= 4;
-    trigger_control_in.stubs_mask         <= x"00000003";
+    cnfg_fastblock_i.trigger_source     <= trigger_source;
+    cnfg_fastblock_i.triggers_to_accept <= 0;
+    cnfg_fastblock_i.divider            <= 10;
+    cnfg_fastblock_i.stubs_mask         <= x"00000003";
 
     UUT: fast_command_core generic map (NUM_HYBRIDS)
-    port map(clk_40MHz, clk_lhc, '0', trigger_control_in, in_stubs, open, open);
+    port map(clk_40MHz, clk_lhc, '0', ctrl_fastblock_i, cnfg_fastblock_i, in_stubs, open, open, open);
     
     clk40_process: process
     begin
@@ -105,26 +117,34 @@ begin
     restart_process: process
     begin
         trigger_source <= x"1";
-        trigger_mode <= x"1";
+        wait for 100 ns;
+        trigger_start <= not trigger_start;
         wait for 500 ns;
         trigger_source <= x"2";
+        wait for 100 ns;
+        trigger_start <= not trigger_start;
         wait for 500 ns;
         trigger_source <= x"3";
-        wait for 500 ns;
-        trigger_source <= x"1";
-        trigger_mode <= x"2";
+        wait for 100 ns;
+        trigger_start <= not trigger_start;
         wait for 500 ns;
     end process;
     
     strobe_process: process(clk_40MHz)
     begin
         if rising_edge(clk_40MHz) then
-        if trigger_mode /= trigger_mode_prev or trigger_source /= trigger_source_prev then
-            trigger_mode_prev <= trigger_mode;
+        if trigger_source /= trigger_source_prev then
             trigger_source_prev <= trigger_source;
-            trigger_control_in.cmd_strobe <= '1';
+            ctrl_fastblock_i.cmd_strobe <= '1';
+            ctrl_fastblock_i.load_config <= '1';
+        elsif trigger_start /= trigger_start_prev then
+            trigger_start_prev <= trigger_start;
+            ctrl_fastblock_i.cmd_strobe <= '1';
+            ctrl_fastblock_i.start_trigger <= '1';
         else
-            trigger_control_in.cmd_strobe <= '0';
+            ctrl_fastblock_i.start_trigger <= '0';
+            ctrl_fastblock_i.load_config <= '0';
+            ctrl_fastblock_i.cmd_strobe <= '0';
         end if;
         end if;
     end process;

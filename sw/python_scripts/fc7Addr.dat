@@ -1,59 +1,36 @@
 *
 user_ipb_stat_regs		40000000    ffffffff     1     1
 
-status_command_block		40000000    ffffffff     1     0
-    status_cmd_command          40000000    f0000000     1     0
-    status_cmd_fsm              40000000    0f000000     1     0
-    status_cmd_error_block_id   40000000    00f00000     1     0
-    status_cmd_error_code       40000000    000ff000     1     0
-    status_cmd_data_ready       40000000    00000800     1     0
-    status_trigger_source       40000000    0000000c     1     0
-    status_trigger_mode         40000000    00000003     1     0
+ipb_daq_system_cnfg		40000100    ffffffff     1     1
+   cnfg_fast_triggers_to_accept 40000123    ffffffff	 1     1
+   cnfg_fast_divider            40000124    ffffffff	 1     1
+   cnfg_fast_source             40000128    0000000f	 1     1
+   cnfg_fast_mask               40000129    ffffffff	 1     1
 
-status_data_0                   40000001    ffffffff     1     0
-    chip_data_0                 40000001    000000ff     1     0
-    chip_data_1                 40000001    0000ff00     1     0
-    chip_data_2                 40000001    00ff0000     1     0
-    chip_data_3                 40000001    ff000000     1     0
-status_data_1                   40000002    ffffffff     1     0
-    chip_data_4                 40000002    000000ff     1     0
-    chip_data_5                 40000002    0000ff00     1     0
-    chip_data_6                 40000002    00ff0000     1     0
-    chip_data_7                 40000002    ff000000     1     0
-status_data_2                   40000003    ffffffff     1     0
-    chip_data_8                 40000003    000000ff     1     0
-    chip_data_9                 40000003    0000ff00     1     0
-    chip_data_10                40000003    00ff0000     1     0
-    chip_data_11                40000003    ff000000     1     0
-status_data_3                   40000004    ffffffff     1     0
-    chip_data_12                40000004    000000ff     1     0
-    chip_data_13                40000004    0000ff00     1     0
-    chip_data_14                40000004    00ff0000     1     0
-    chip_data_15                40000004    ff000000     1     0
-	
-user_ipb_ctrl_regs		40000040    ffffffff     1     1
+ipb_daq_system_ctrl		40000200    ffffffff     1     1
+   ctrl_global_reset	        40000200    00000001     1     1
+   ctrl_fast_reset		40000201    00000001     1     1
+   ctrl_fast_start		40000201    00000002     1     1
+   ctrl_fast_stop		40000201    00000004     1     1
+   ctrl_fast_load_config	40000201    00000008     1     1
+   ctrl_i2c_reset		40000230    00000001     1     1
+   ctrl_i2c_reset_fifos		40000230    00000004     1     1
+   ctrl_i2c_command_fifo	40000240    ffffffff	 1     1
+     ctrl_i2c_command_type	40000240    f0000000	 1     1
+     ctrl_i2c_command_hybrid_id	40000240    0f000000	 1     1
+     ctrl_i2c_command_chip_id	40000240    00f00000	 1     1
+     ctrl_i2c_command_mask	40000240    00040000	 1     1
+     ctrl_i2c_command_page	40000240    00020000	 1     1
+     ctrl_i2c_command_read	40000240    00010000	 1     1
+     ctrl_i2c_command_register	40000240    0000ff00	 1     1
+     ctrl_i2c_command_data	40000240    000000ff	 1     1
+   ctrl_i2c_reply_fifo          40000250    ffffffff     1     0
 
-command_processor_cmd_in1	40000040    ffffffff     1     1
-    command                     40000040    f0000000     1     1
-    data_processed              40000040    0000f800     1     1
-    i2c_hybrid_id               40000040    000007c0     1     1
-    i2c_chip_id                 40000040    0000003c     1     1
-    i2c_read                    40000040    00000002     1     1
-    i2c_page                    40000040    00000001     1     1
-    trigger_source 		40000040    000000f0     1     1
-    trigger_mode		40000040    0000000f     1     1
-command_processor_cmd_in2	40000041    ffffffff     1     1
-    triggers_to_accept  	40000041    ffffffff     1     1
-    i2c_register_address        40000041    00ff0000     1     1
-    i2c_write_mask              40000041    0000ff00     1     1
-    i2c_data                    40000041    000000ff     1     1
-command_processor_cmd_in3	40000042    ffffffff     1     1
-    trigger_divider     	40000042    ffffffff     1     1
-command_processor_cmd_in4	40000043    ffffffff     1     1
-    trigger_stubs_mask  	40000043    ffffffff     1     1
+ipb_daq_system_stat		40000300    ffffffff     1     0
+   stat_error_block_id		40000300    f0000000     1     0
+   stat_error_code		40000300    0ff00000     1     0
+   stat_fast_fsm		40000300    0000ff00     1     0
+	stat_fast_fsm_state	40000300    00001000     1     0
+	stat_fast_fsm_source    40000300    00000f00     1     0
+   stat_i2c_fsm			40000300    0000000f	 1     0
 
-
-
-
-*
-user_ddr3				60000000    ffffffff     1     1

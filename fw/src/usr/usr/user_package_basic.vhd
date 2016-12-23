@@ -6,10 +6,12 @@ package user_package is
 	constant sys_phase_mon_freq      : string   := "160MHz"; -- valid options only "160MHz" or "240MHz"    
 
    --=== ipb slaves =============--
-	constant nbr_usr_slaves				: positive := 2 ;
+	constant nbr_usr_slaves				: positive := 3 ;
    
-	constant user_ipb_stat_regs		: integer  := 0 ;
-	constant user_ipb_ctrl_regs		: integer  := 1 ;
+    constant ipb_daq_system_cnfg_sel: integer  := 0;
+    constant ipb_daq_system_ctrl_sel: integer  := 1;
+    constant ipb_daq_system_stat_sel: integer  := 2;
+    
 	
 	constant MAX_NTRIGGERS_TO_ACCEPT : integer := 1_000_000;
 	constant MAX_TRIGGER_DIVIDER     : integer := 400_000_000;
@@ -22,7 +24,7 @@ package user_package is
     record
       cmd_strobe            : std_logic;
       -- hybrid_id
-      cmd_hybrid_id 	    : std_logic_vector(4 downto 0);
+      cmd_hybrid_id 	    : std_logic_vector(3 downto 0);
       -- cbc on hybrid id
       cmd_chip_id           : std_logic_vector(3 downto 0);
       -- page in CBC
@@ -64,23 +66,44 @@ package user_package is
       external_pulse_request : std_logic; 
     end record;
    
-    -- Bus From Command Processor to Fast Command Block
-    type cmd_to_fastbus is
+    -- Config Bus From Command Processor to Fast Command Block
+    type cnfg_fastblock is
     record
-      -- strobe when new control signal arrived
-      cmd_strobe            : std_logic;
       -- source of the trigger signal
       trigger_source        : std_logic_vector(3 downto 0);
-      -- trigger operation mode
-      trigger_mode          : std_logic_vector(3 downto 0);
-      -- number of trigger to accept
-      triggers_to_accept    : integer range 1 to MAX_NTRIGGERS_TO_ACCEPT;
+      -- number of triggers to accept
+      triggers_to_accept    : integer range 0 to MAX_NTRIGGERS_TO_ACCEPT;
       -- trigger frequency divider, minimal frequency is 0.1Hz
       divider               : integer range 1 to MAX_TRIGGER_DIVIDER;
       -- stubs mask to get coincidence
       stubs_mask            : std_logic_vector(31 downto 0);
-    end record;	
-
+    end record;    
+    -- Control Bus From Command Processor to Fast Command Block
+    type ctrl_fastblock is
+    record
+      cmd_strobe            : std_logic;
+      -- reset bit
+      reset                 : std_logic;
+      -- load config
+      load_config           : std_logic;
+      -- start/stop
+      start_trigger         : std_logic;
+      stop_trigger          : std_logic;
+      -- fast signals
+      fast_signal_reset             : std_logic;
+      fast_signal_test_pulse        : std_logic;
+      fast_signal_trigger           : std_logic;
+      fast_signal_orbit_reset       : std_logic;
+    end record;
+    
+    type fifo_stat is
+    record
+        i2c_commands_empty   : std_logic;
+        i2c_commands_full    : std_logic; 
+        i2c_replies_empty    : std_logic;       
+        i2c_replies_full     : std_logic;        
+    end record;
+    
 end user_package;
    
 package body user_package is

@@ -1,21 +1,6 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
+-- Engineer: Mykyta Haranko
 -- Create Date: 11/08/2016 12:52:31 PM
--- Design Name: 
--- Module Name: command_processor_core - rtl
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
 ----------------------------------------------------------------------------------
 
 
@@ -23,6 +8,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.system_package.all;
 use work.user_package.all;
+use work.ipbus.all;
 
 
 -- Uncomment the following library declaration if using
@@ -40,102 +26,163 @@ entity command_processor_core is
     NUM_CHIPS       : integer range 1 to 16 := 1
   );
   Port ( 
-    clk             : in std_logic;
-    reset           : in std_logic;    
+    clk_40MHz       : in std_logic;
+    ipb_clk         : in std_logic;
+    reset           : in std_logic;   
     -- command from IpBus
-    command_in      : in array_4x32bit;
-    -- output command
+    ipb_mosi_i      : in  ipb_wbus_array(0 to nbr_usr_slaves-1);
+    ipb_miso_o      : out ipb_rbus_array(0 to nbr_usr_slaves-1);
+    -- global control
+    ipb_global_reset_o  : out std_logic; 
+    -- fast command block control line
+    ctrl_fastblock_o  : out ctrl_fastblock;
+    cnfg_fastblock_o  : out cnfg_fastblock;
+    -- output i2c command
     i2c_request     : out cmd_wbus;
     i2c_reply	    : in cmd_rbus;
-    -- fast command block control line
-    cmd_fast_block  : out cmd_to_fastbus;
-    -- status back using IpBus
-    status_out      : out std_logic_vector(31 downto 0);
-    -- 8 chips data back
-    status_data     : out array_4x32bit;
+    --===================================--
+    -- statuses from other blocks
+    --===================================--
+    status_fast_block_fsm   : in std_logic_vector(7 downto 0);
+    --===================================--
     -- errors from other blocks
-    error_fast_block: in std_logic_vector(7 downto 0)
+    --===================================--
+    error_fast_block        : in std_logic_vector(7 downto 0)
   );
 end command_processor_core;
 
 architecture rtl of command_processor_core is
 
     --==========================--
-    -- command processing signals
-    --==========================--
-    signal command_from_ipbus      : std_logic_vector(3 downto 0) := (others => '0');
-    signal command_from_ipbus_loc      : std_logic_vector(3 downto 0) := (others => '0');
-    type command_type is (None, I2C, Fast, Unknown);
-    signal ipbus_command_type     : command_type;
-    signal ipbus_command_type_loc : command_type := None;    
+    -- I2C (incl. FIFO) Signals
+    --==========================-- 
+    signal i2c_reset             : std_logic;
+    signal i2c_reset_fifos       : std_logic;   
+    signal command_fifo_we       : std_logic;
+    signal command_fifo_read_next: std_logic;
+    signal command_fifo_data_in  : std_logic_vector(31 downto 0);
+    signal command_fifo_data_out : std_logic_vector(31 downto 0);
+    signal command_fifo_empty    : std_logic;
     
-    --==========================--
-    -- i2c signal definition
-    --==========================--
-    -- command type
-    signal i2c_command            : std_logic_vector(3 downto 0) := (others => '0');
-    -- hybrid_id
-    signal hybrid_id              : std_logic_vector(4 downto 0) := (others => '0');
-    -- cbc on hybrid id
-    signal chip_id                : std_logic_vector(3 downto 0) := (others => '0');
-    -- page in the CBC
-    signal page                   : std_logic := '0';
-    -- read or write setting
-    signal read                   : std_logic := '0';
-    -- register_address
-    signal register_address       : std_logic_vector(7 downto 0) := (others => '0');
-    -- write mask
-    signal write_mask             : std_logic_vector(7 downto 0) := (others => '0');
-    signal data_to_chip           : std_logic_vector(7 downto 0) := (others => '0');
-    -- data from chips
-    signal chip_data              : array_16x8bit := (others => (others => '0'));
-    -- i2c fsm status
-    signal i2c_fsm_status         : std_logic_vector(3 downto 0) := (others => '0');
-    -- i2c fsm status
-    signal i2c_fsm_error          : std_logic_vector(7 downto 0) := (others => '0');
-    signal i2c_execution_finished : std_logic;
-    --==========================--
+    signal reply_fifo_we         : std_logic;
+    signal reply_fifo_read_next  : std_logic;
+    signal reply_fifo_data_in    : std_logic_vector(31 downto 0);
+    signal reply_fifo_data_out   : std_logic_vector(31 downto 0); 
     
-    --==========================--
-    -- processor fsm definition
-    --==========================--
-    type state_type is (Idle, SendCommand, WaitForFinished);
-    signal processor_fsm_state    : state_type := Idle;
-    signal error_command_block         : std_logic_vector(7 downto 0) := (others => '0');
-    signal start_sending_i2c          : std_logic := '0';
-    --==========================--
+    signal i2c_mask              : std_logic_vector(7 downto 0);   
     
     --==========================--    
     -- statuses
     --==========================--
-    signal status_last_command    : std_logic_vector(3 downto 0) := x"0";
-    signal status_processor_fsm   : std_logic_vector(3 downto 0) := x"0";
-    signal status_error_block_id  : std_logic_vector(3 downto 0) := x"0";
-    signal status_error_code      : std_logic_vector(7 downto 0) := x"00";
-    signal status_data_ready      : std_logic := '0'; 
+    signal status_i2c_master_fsm  : std_logic_vector(3 downto 0);
+    signal error_i2c_master       : std_logic_vector(7 downto 0);
+    signal fifo_statuses          : fifo_stat;
     --==========================--   
     
 begin
-
-    command_from_ipbus <= command_in(0)(31 downto 28);
+        
+     --===================================--
+     -- IPBus Control Decoder
+     --===================================--
+     ipbus_decoder_ctrl: entity work.ipbus_decoder_ctrl
+     --===================================--
+     port map
+     (   
+        clk                   => ipb_clk,
+        reset                 => reset,
+        ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_ctrl_sel),
+        ipb_miso_o            => ipb_miso_o(ipb_daq_system_ctrl_sel),
+        -- global commands
+        ipb_global_reset      => ipb_global_reset_o,
+        -- fast commands
+        ctrl_fastblock_o      => ctrl_fastblock_o,
+        -- i2c commands                       
+        i2c_reset             => i2c_reset,
+        i2c_reset_fifos       => i2c_reset_fifos,
+        command_fifo_we_o     => command_fifo_we,
+        command_fifo_data_o   => command_fifo_data_in,
+        reply_fifo_read_next_o=> reply_fifo_read_next,
+        reply_fifo_data_i     => reply_fifo_data_out
+     );
+     --===================================--
+     
+     --===================================--
+     -- IPBus Config Decoder
+     --===================================--
+     ipbus_decoder_cnfg: entity work.ipbus_decoder_cnfg
+     --===================================--
+     port map
+     (   
+        clk                   => ipb_clk,
+        reset                 => reset,
+        ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_cnfg_sel),
+        ipb_miso_o            => ipb_miso_o(ipb_daq_system_cnfg_sel),
+        -- fast block
+        cnfg_fastblock_o      => cnfg_fastblock_o,
+        -- i2c mask
+        i2c_mask              => i2c_mask
+     );
+    --===================================--
     
-    with command_from_ipbus select ipbus_command_type <=
-        None    when x"0",
-        I2C     when x"1",
-        I2C     when x"2",
-        I2C     when x"3",
-        Unknown when x"4",
-        Unknown when x"6",
-        Unknown when x"7",
-        Unknown when x"8",
-        Fast    when x"9",
-        Unknown when x"A",
-        Unknown when x"B",
-        Unknown when x"C",
-        Unknown when x"D",
-        Unknown when x"E",
-        Unknown when x"F",
-        Unknown when others;
+    --===================================--
+    -- IPBus Status Decoder
+    --===================================--
+    ipbus_decoder_stat: entity work.ipbus_decoder_stat
+    --===================================--
+    port map
+    (   
+     clk                   => ipb_clk,
+     reset                 => reset,
+     ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_stat_sel),
+     ipb_miso_o            => ipb_miso_o(ipb_daq_system_stat_sel),
+     -- fast command block statuses
+     status_fast_block_fsm => status_fast_block_fsm,
+     error_fast_block      => error_fast_block,
+     -- i2c master statuses
+     status_i2c_master_fsm   => status_i2c_master_fsm,
+     error_i2c_master       => error_i2c_master,
+     fifo_statuses          => fifo_statuses
+    );
+    --===================================--    
+     
+     --===================================--
+     -- I2C Commands FIFO
+     --===================================--
+     i2c_commands_fifo: entity work.i2c_commands_fifo
+    --===================================--
+     port map
+     (
+        rst            => reset or i2c_reset or i2c_reset_fifos,
+        wr_clk         => ipb_clk,
+        rd_clk         => clk_40MHz,
+        din            => command_fifo_data_in,
+        wr_en          => command_fifo_we,
+        rd_en          => command_fifo_read_next,
+        dout           => command_fifo_data_out,
+        full           => fifo_statuses.i2c_commands_full,
+        empty          => command_fifo_empty
+    );
+    fifo_statuses.i2c_commands_empty <= command_fifo_empty;
+    --===================================--
+    
+    --===================================--
+    -- I2C Replies FIFO
+    --===================================--
+    i2c_replies_fifo: entity work.i2c_replies_fifo
+   --===================================--
+    port map
+    (
+       rst            => reset or i2c_reset or i2c_reset_fifos,
+       wr_clk         => clk_40MHz,
+       rd_clk         => ipb_clk,
+       din            => reply_fifo_data_in,
+       wr_en          => reply_fifo_we,
+       rd_en          => reply_fifo_read_next,
+       dout           => reply_fifo_data_out,
+       full           => fifo_statuses.i2c_replies_full,
+       empty          => fifo_statuses.i2c_replies_empty
+   );
+   --===================================--
    
     --===================================--
     -- Block responsible for I2C Command Sending
@@ -149,174 +196,19 @@ begin
     )
     port map
     (
-       clk              => clk,
-       reset            => reset,
-       start_sending    => start_sending_i2c,
-       command_type     => i2c_command,
-       hybrid_id        => hybrid_id,
-       chip_id          => chip_id,
-       read             => read,
-       page             => page,
-       register_address => register_address,
-       write_mask       => write_mask,
-       data             => data_to_chip,
-       chip_data        => chip_data,
-       i2c_fsm_status   => i2c_fsm_status,
-       error_code       => i2c_fsm_error,
+       clk              => clk_40MHz,
+       reset            => reset or i2c_reset,
+       i2c_mask         => i2c_mask,              
+       command_fifo_empty_i     => command_fifo_empty,
+       command_fifo_read_next_o => command_fifo_read_next,
+       command_fifo_data_i      => command_fifo_data_out,
+       reply_fifo_we_o          => reply_fifo_we,
+       reply_fifo_data_o        => reply_fifo_data_in,
+       i2c_fsm_status   => status_i2c_master_fsm,
+       error_code       => error_i2c_master,
        i2c_request      => i2c_request,
-       i2c_reply        => i2c_reply,
-       data_ready       => status_data_ready,
-       data_processed   => command_in(0)(15 downto 11),
-       execution_finished => i2c_execution_finished
+       i2c_reply        => i2c_reply       
     );        
     --===================================--
-        
-    -- statuses
-    status_out(31 downto 28) <= status_last_command;
-    status_out(27 downto 24) <= status_processor_fsm;
-    status_out(23 downto 20) <= status_error_block_id;
-    status_out(19 downto 12) <= status_error_code;
-    status_out(11)           <= status_data_ready;
-    status_out(10 downto 0)  <= (others => '0');
-    
-    -- multiple read-out
-    GENERATE_OUT_DATA: for reg_id in 0 to 3 generate
-        status_data(reg_id)(7 downto 0) <= chip_data(reg_id*4);
-        status_data(reg_id)(15 downto 8) <= chip_data(reg_id*4+1);
-        status_data(reg_id)(23 downto 16) <= chip_data(reg_id*4+2);
-        status_data(reg_id)(31 downto 24) <= chip_data(reg_id*4+3);
-    end generate;   
-
-PROCESSOR_FSM: process(reset, clk)
-begin
-    if reset = '1' then
-        command_from_ipbus_loc <= command_from_ipbus;
-        ipbus_command_type_loc <= ipbus_command_type;
-        
-        error_command_block <= x"00";
-        processor_fsm_state <= Idle;        
-        status_processor_fsm <= x"1";
-
-        -- i2c resetter               
-        i2c_command         <= (others => '0');
-        hybrid_id           <= (others => '0');
-        chip_id             <= (others => '0');
-        read                <= '0';
-        page                <= '0';
-        register_address    <= (others => '0');
-        write_mask          <= (others => '0');
-        data_to_chip        <= (others => '0');
-        
-        -- fast command resetter
-        cmd_fast_block.cmd_strobe         <= '0';   
-        cmd_fast_block.trigger_source     <= x"0";
-        cmd_fast_block.trigger_mode       <= x"0";
-        cmd_fast_block.triggers_to_accept <= 1;
-        cmd_fast_block.divider            <= 1;
-        cmd_fast_block.stubs_mask         <= x"00000000";
-    elsif rising_edge(clk) then
-    case processor_fsm_state is
-        when Idle =>
-            status_processor_fsm <= x"1";
-            cmd_fast_block.cmd_strobe <= '0';
-            if command_from_ipbus /= command_from_ipbus_loc then
-                error_command_block <= x"00";
-                status_last_command <= command_from_ipbus;
-                command_from_ipbus_loc <= command_from_ipbus;
-                ipbus_command_type_loc <= ipbus_command_type;
-                if ipbus_command_type = I2C then
-                    i2c_command     <= command_from_ipbus;
-                    hybrid_id       <= command_in(0)(10 downto 6);
-                    chip_id         <= command_in(0)(5 downto 2);
-                    read            <= command_in(0)(1);
-                    page            <= command_in(0)(0);
-                    register_address<= command_in(1)(23 downto 16);
-                    write_mask      <= command_in(1)(15 downto 8);
-                    data_to_chip    <= command_in(1)(7 downto 0);
-                elsif ipbus_command_type = Fast then
-                    if command_from_ipbus = x"9" then
-                        cmd_fast_block.trigger_source     <= command_in(0)(7 downto 4);
-                        cmd_fast_block.trigger_mode       <= command_in(0)(3 downto 0);
-                        cmd_fast_block.triggers_to_accept <= TO_INTEGER(unsigned(command_in(1)));
-                        cmd_fast_block.divider            <= TO_INTEGER(unsigned(command_in(2)));
-                        cmd_fast_block.stubs_mask         <= command_in(3);
-                    else
-                        -- wrong command
-                        error_command_block <= x"41";
-                        processor_fsm_state <= Idle;                        
-                    end if;
-                end if;
-                processor_fsm_state <= SendCommand;
-            end if;  
-        when SendCommand =>
-            status_processor_fsm <= x"2";
-            case ipbus_command_type_loc is
-                when None =>
-                    processor_fsm_state <= Idle;
-                when Unknown =>
-                    -- unknown command
-                    error_command_block <= x"11";
-                    processor_fsm_state <= Idle;
-                when I2C =>
-                    -- wait for previous command to be finished
-                    if i2c_fsm_status = x"1" and i2c_execution_finished = '0' then
-                        start_sending_i2c <= not start_sending_i2c;
-                        processor_fsm_state <= WaitForFinished;
-                    end if;
-                when Fast =>
-                    -- change trigger source/mode/frequency
-                    if command_from_ipbus_loc = x"9" then
-                        cmd_fast_block.cmd_strobe <= '1';   
-                        processor_fsm_state <= Idle;
-                    else
-                        -- wrong command
-                        error_command_block <= x"41";
-                        processor_fsm_state <= Idle;                        
-                    end if;    
-                when others =>
-                    -- case statement exeception
-                    error_command_block <= x"1e";
-                    processor_fsm_state <= Idle;
-            end case;
-        when WaitForFinished =>
-            status_processor_fsm <= x"3";
-            case ipbus_command_type_loc is
-                when I2C =>
-                    if i2c_execution_finished = '1' then
-                        -- will be zero if no error
-                        error_command_block <= i2c_fsm_error;
-                        processor_fsm_state <= Idle;
-                    end if;
-                when others =>
-                    -- case statement exeception
-                    error_command_block <= x"1e";
-                    processor_fsm_state <= Idle;
-            end case;                 
-        when others =>
-            -- wrong fsm state
-            error_command_block <= x"1f";
-            processor_fsm_state <= Idle;        
-    end case;
-    end if;
-end process;
-
-ERROR_HANDLER: process(reset, clk)
-begin
-    if reset = '1' then
-       status_error_block_id <= x"0";
-       status_error_code <= x"00"; 
-    elsif rising_edge(clk) then
-        if error_command_block /= x"00" then
-            status_error_block_id <= x"1";
-            status_error_code <= error_command_block;
-        elsif error_fast_block /= x"00" then
-            status_error_block_id <= x"2";
-            status_error_code <= error_fast_block;
-        else
-            status_error_block_id <= x"0";
-            status_error_code <= x"00";  
-        end if;    
-    end if;
-end process;
 
 end rtl;
