@@ -14,7 +14,7 @@ f.close()
 fc7 = ChipsBusUdp(fc7AddrTable, ipaddr, 50001)
 #############
 # Combine and Send I2C Command
-def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read register_address, data):
+def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read, register_address, data):
 
   raw_command = fc7AddrTable.getItem("ctrl_i2c_command_type").shiftDataToMask(command)
   raw_hybrid_id = fc7AddrTable.getItem("ctrl_i2c_command_hybrid_id").shiftDataToMask(hybrid_id)
@@ -31,42 +31,58 @@ def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read register_a
 
   #print hex(cmd)
 
-  fc7.write("ctrl_i2c_command_fifo", cmd);
+  fc7.write("ctrl_i2c_command_fifo", cmd)
   return description
 
+def Read_I2C():
+  print "Data Reply I2C:", hex(fc7.read("ctrl_i2c_reply_fifo"))	  
+
 # Send command ctrl
-def SendCommand_CTRL(command = "none")
+def SendCommand_CTRL(name = "none"):
     if name == "none":
         print "Sending nothing"
     elif name == "global_reset":
-        fc7.write("ctrl_global_reset", 1);
+        #fc7.write("ctrl_global_reset", 1)
+	fc7.write("ctrl_global", fc7AddrTable.getItem("ctrl_global_reset").shiftDataToMask(1))
     elif name == "reset_trigger":
-        fc7.write("ctrl_fast_reset", 1);
+        #fc7.write("ctrl_fast_reset", 1)
+	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_reset").shiftDataToMask(1))
     elif name == "start_trigger":
-        fc7.write("ctrl_fast_start", 1);
+        #fc7.write("ctrl_fast_start", 1)
+	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_start").shiftDataToMask(1))
     elif name == "stop_trigger":
-        fc7.write("ctrl_fast_stop", 1);
+        #fc7.write("ctrl_fast_stop", 1)
+	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_stop").shiftDataToMask(1))
     elif name == "load_config":
-        fc7.write("ctrl_fast_load_config", 1);
+        #fc7.write("ctrl_fast_load_config", 1)
+	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_load_config").shiftDataToMask(1))
     elif name == "reset_i2c":
-        fc7.write("ctrl_i2c_reset", 1);
+        #fc7.write("ctrl_i2c_reset", 1)
+	fc7.write("ctrl_i2c", fc7AddrTable.getItem("ctrl_i2c_reset").shiftDataToMask(1))
     elif name == "reset_i2c_fifos":
-        fc7.write("ctrl_i2c_reset_fifos", 1);
+        #fc7.write("ctrl_i2c_reset_fifos", 1)
+	fc7.write("ctrl_i2c", fc7AddrTable.getItem("ctrl_i2c_reset_fifos").shiftDataToMask(1))
     else:
         print "Unknown Command"
 
 # Configure Fast Block
 def Configure_Fast(triggers_to_accept, divider, source, stubs_mask):
-
   fc7.write("cnfg_fast_triggers_to_accept", triggers_to_accept)
   fc7.write("cnfg_fast_divider", divider)
   ready_source = fc7AddrTable.getItem("cnfg_fast_source").shiftDataToMask(source)
-  fc7.write("cnfg_fast_source", ready_source)
+  fc7.write("cnfg_fast_source_full", ready_source)
   fc7.write("cnfg_fast_mask", stubs_mask)
-  SendCommand_CTRL("global_reset")
+  #sleep(1)
+  SendCommand_CTRL("reset_trigger")
   sleep(1)
   SendCommand_CTRL("load_config")
+  sleep(1)
 
+# Configure I2C
+def Configure_I2C(mask):
+  fc7.write("cnfg_i2c", fc7AddrTable.getItem("cnfg_i2c_mask").shiftDataToMask(mask))
+  SendCommand_CTRL("reset_i2c")
+  SendCommand_CTRL("reset_i2c_fifos")
 
 def ReadStatus(name = "Current Status"):
   print "============================"
@@ -75,7 +91,6 @@ def ReadStatus(name = "Current Status"):
   print "   -> status error code:", hex(fc7.read("stat_error_code"))
   print "   -> interpretion: "
   fc7ErrorHandler.getErrorDescription(fc7.read("stat_error_block_id"),fc7.read("stat_error_code"))
-  print "   -> data ready:", fc7.read("status_cmd_data_ready")
   temp_source = fc7.read("stat_fast_fsm_source")
   temp_source_name = "Unknown"
   if temp_source == 1:
@@ -92,6 +107,11 @@ def ReadStatus(name = "Current Status"):
   elif temp_state == 1:
     temp_state_name = "Running"
   print "   -> trigger state:", temp_state_name
+  print "   -> trigger configured:", fc7.read("stat_fast_fsm_configured")
+  print	"   -> --------------------------------"
+  print "   -> i2c commands fifo empty:", fc7.read("stat_i2c_fifo_commands_empty")
+  print "   -> i2c replies fifo empty:", fc7.read("stat_i2c_fifo_replies_empty")
+  print "   -> i2c fsm state:", fc7.read("stat_i2c_fsm")
   print "============================"
 
 #def ReadChipData(hybrid_id):
@@ -126,16 +146,29 @@ data = 13
 ################
 ## fast region #
 ################
-trigger_source = 1
+trigger_source = 3
 triggers_to_accept = 0
-trigger_divider = 4
+trigger_divider = 2
 trigger_stubs_mask = 3
 ################
 
-#ReadStatus(SendCommand_I2C(command_i2c, hybrid_id, chip_id, use_mask, page, read, register, data))
-
 ReadStatus()
+#Configure_I2C(255)
+#ReadStatus()
+#SendCommand_CTRL("reset_i2c")
+#ReadStatus()
+#for i in range(1,1000):
+#	if i%100 == 0:
+#		ReadStatus("temp")
+#		SendCommand_I2C(command_i2c, hybrid_id, chip_id, use_mask, page, read, register, data)
 Configure_Fast(triggers_to_accept, trigger_divider, trigger_source, trigger_stubs_mask)
 ReadStatus()
 SendCommand_CTRL("start_trigger")
 ReadStatus()
+sleep(2)
+ReadStatus()
+SendCommand_CTRL("stop_trigger")
+ReadStatus()
+
+#while(fc7.read("stat_i2c_fifo_replies_empty")==0):
+#	Read_I2C()

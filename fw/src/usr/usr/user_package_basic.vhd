@@ -14,8 +14,11 @@ package user_package is
     
 	
 	constant MAX_NTRIGGERS_TO_ACCEPT : integer := 1_000_000;
-	constant MAX_TRIGGER_DIVIDER     : integer := 400_000_000;
-
+    constant CLK_40MHZ_NCOUNTS        : integer := 40_000_000;
+	constant MAX_TRIGGER_DIVIDER     : integer := 10*CLK_40MHZ_NCOUNTS;
+	-- when checking trigger, maximal amount of time without trigger, seconds
+	constant MAX_TIME_WITHOUT_TRIGGER: integer := 1;
+	
 
 	type array_8x8bit  is array  (0 to  7) of std_logic_vector(7 downto 0);
 

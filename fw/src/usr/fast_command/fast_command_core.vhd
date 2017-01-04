@@ -31,7 +31,7 @@ entity fast_command_core is
     cnfg_fastblock_i      : in cnfg_fastblock;
     -- stubs from hybrids
     in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
-    -- trigger status register output (3-2 - source, 1-0 - state)
+    -- trigger status register output (3-0 - source, 4 - state, 5 - configured)
     trigger_status_out    : out std_logic_vector(7 downto 0);
     -- fast command block error
     error_code            : out std_logic_vector(7 downto 0);
@@ -57,15 +57,13 @@ architecture rtl of fast_command_core is
     
     -- trigger signals 
     signal trigger_i                : std_logic;
-    signal ClkOutputMuxA            : std_logic;
-    signal ClkOutputMuxB            : std_logic;
+    signal stubs_user_muxed         : std_logic;
     signal clock_enable             : std_logic := '0';
     signal user_trigger             : std_logic;
     signal stubs_trigger            : std_logic;
     
     -- trigger configs
-    signal trigger_source           : std_logic_vector(3 downto 0) := x"1";
-    signal user_trigger_selector    : std_logic;
+    signal trigger_source           : std_logic_vector(3 downto 0) := x"1";    
     signal hybrid_mask_inv          : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
     signal user_trigger_divider     : integer range 1 to MAX_TRIGGER_DIVIDER := 1;    
     signal triggers_to_accept       : integer range 0 to MAX_NTRIGGERS_TO_ACCEPT := 0;
@@ -81,9 +79,8 @@ architecture rtl of fast_command_core is
     signal reset_counter            : std_logic := '0';
     
     -- trigger checker counter
+    signal checked                  : std_logic := '0';
     signal trigger_checker          : std_logic_vector(31 downto 0) := (others => '0');
-    signal trigger_source_prev      : std_logic_vector(3 downto 0) := x"0";
-    signal counter_prev             : std_logic_vector(31 downto 0) := (others => '0');
     
     -- status signals
     signal status_source            : std_logic_vector(3 downto 0) := x"0";
@@ -97,7 +94,6 @@ begin
     reset_int <= reset or ipb_reset;
 
     stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
-    user_trigger_selector <= '1' when user_trigger_divider > 1 else '0';
     
     -- status
     trigger_status_out(7 downto 6) <= "00";
@@ -111,45 +107,25 @@ clk_divider: entity work.clock_divider
 port map
 (
     i_clk           => clk_40MHz,
-    i_rst           => reset,
+    i_rst           => reset_int,
     i_clk_divider   => std_logic_vector(to_unsigned(user_trigger_divider,32)),
     o_clk           => user_trigger
 );             
 --===================================--
 
 --===================================--
-BufGCtrlMuxA_l : BUFGCTRL  
+MUX_Stubs_User : BUFGCTRL  
 --===================================--
 generic map (  
   INIT_OUT     => 0,  
   PRESELECT_I0 => FALSE,  
   PRESELECT_I1 => FALSE)  
 port map (  
-  O       => ClkOutputMuxA,  
-  CE0     => '1',  
-  CE1     => '1',  
-  I0      => clk_40MHz,  
-  I1      => user_trigger,  
-  IGNORE0 => '1',  
-  IGNORE1 => '1',  
-  S0      => not user_trigger_selector, -- Clock select0 input  
-  S1      => user_trigger_selector -- Clock select1 input  
-);
---===================================--
-
---===================================--
-BufGCtrlMuxB_l : BUFGCTRL  
---===================================--
-generic map (  
-  INIT_OUT     => 0,  
-  PRESELECT_I0 => FALSE,  
-  PRESELECT_I1 => FALSE)  
-port map (  
-  O       => ClkOutputMuxB,  
+  O       => stubs_user_muxed,  
   CE0     => '1',  
   CE1     => '1',  
   I0      => stubs_trigger,  
-  I1      => ClkOutputMuxA,  
+  I1      => user_trigger,
   IGNORE0 => '1',  
   IGNORE1 => '1',  
   S0      => not trigger_source(0), -- Clock select0 input  
@@ -158,7 +134,7 @@ port map (
 --===================================--
 
 --===================================--
-BufGCtrlMuxC_l : BUFGCTRL  
+MUX_Final : BUFGCTRL  
 --===================================--
 generic map (  
   INIT_OUT     => 0,  
@@ -169,8 +145,7 @@ port map (
   CE0     => '1',  
   CE1     => '1',  
   I0      => l1_trigger_in,  
-  I1      => ClkOutputMuxB,  
-  --I1        => ClkOutputMuxA,
+  I1      => stubs_user_muxed,  
   IGNORE0 => '1',  
   IGNORE1 => '1',  
   S0      => not trigger_source(1), -- Clock select0 input  
@@ -240,19 +215,30 @@ SOURCE_PROCESS: process (reset_int, clk_40MHz)
 begin
     if reset_int = '1' then
         status_source <= x"1";
-        trigger_source_prev <= trigger_source;
         trigger_checker <= (others => '0');
-        counter_prev <= counter;
         no_triggers <= '0';
+        checked <= '0';
     elsif rising_edge(clk_40MHz) then
-        -- if no trigger for 10s => bye bye
-        --if trigger_state = Running and TO_INTEGER(unsigned(trigger_checker)) >= 400 and counter = counter_prev then
-        if trigger_state = Running and TO_INTEGER(unsigned(trigger_checker)) >= 400_000_000 and counter = counter_prev then
-            no_triggers <= '1';
-        else
-            no_triggers <= '0';
+        if reset_counter = '1' then
+            checked <= '0';
+            trigger_checker <= (others => '0');
         end if;
-        trigger_checker <= trigger_checker + 1;
+        if checked = '0' then            
+            if trigger_state = Running then                
+                -- if no trigger for MAX_TIME_WITHOUT_TRIGGER seconds => bye bye
+                if TO_INTEGER(unsigned(trigger_checker)) >= MAX_TIME_WITHOUT_TRIGGER*CLK_40MHZ_NCOUNTS then
+                    if counter = x"00000000" then
+                        no_triggers <= '1';
+                    else
+                        no_triggers <= '0';
+                    end if;
+                    checked <= '1';                    
+                else
+                    no_triggers <= '0';
+                end if;
+                trigger_checker <= trigger_checker + 1;                
+            end if;            
+        end if;
         case trigger_source is
             -- spread L1-Trigger as trigger
             when x"1" =>
@@ -266,12 +252,7 @@ begin
             -- no triggers
             when others =>
                 status_source <= x"f";
-        end case;
-        if trigger_source /= trigger_source_prev then
-            trigger_source_prev <= trigger_source;
-            trigger_checker <= (others => '0');
-            counter_prev <= counter;
-        end if;
+        end case;            
     end if;            
 end process;
 

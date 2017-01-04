@@ -30,16 +30,16 @@ class ErrorHandler(object):
             elif hex(error_code[0:2]) == "0x3":
                 message = "PHY_I2C: " + str(error_code)
             else:
-                message = "Unknown Code: " + str(error_code)
+                message = "Unknown Code: " + str(hex(error_code))
         elif block_id == 2:
-            if hex(error_code) == "0x01L":
+            if hex(error_code) == "0x1L":
                 message = "Unknown Mode"
-            elif hex(error_code) == "0x02L":
+            elif hex(error_code) == "0x2L":
                 message = "Unknown Source"
-            elif hex(error_code) == "0x03L":
+            elif hex(error_code) == "0x3L":
                 message = "No triggers, check the clock please"
             else:
-                message = "Unknown Code: " + str(error_code)
+                message = "Unknown Code: " + str(hex(error_code))
         else:
             message = "Block: " + str(block_id) + ", Code: " + str(error_code)
         print "     ERROR BLOCK: ", block_name, ", MESSAGE: ", message

@@ -13,10 +13,10 @@
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="612000003fs"></ZoomEndTime>
-      <Cursor1Time time="1000000000fs"></Cursor1Time>
+      <ZoomEndTime time="3315000001fs"></ZoomEndTime>
+      <Cursor1Time time="1050000000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="15" />
+   <WVObjectSize size="16" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
@@ -57,6 +57,10 @@
          <obj_property name="ElementShortName">trigger_source[3:0]</obj_property>
          <obj_property name="ObjectShortName">trigger_source[3:0]</obj_property>
       </wvobject>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/checked">
+      <obj_property name="ElementShortName">checked</obj_property>
+      <obj_property name="ObjectShortName">checked</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/trigger_i">
       <obj_property name="ElementShortName">trigger_i</obj_property>
