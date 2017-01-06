@@ -60,12 +60,10 @@ architecture rtl of ipbus_decoder_ctrl is
                                                          fast_signal_test_pulse => '0',
                                                          fast_signal_trigger => '0',
                                                          fast_signal_orbit_reset => '0');
-    signal timer               : std_logic := '0';
     
     signal command_fifo_we_int      : std_logic := '0';
     signal command_fifo_data_int    : std_logic_vector(31 downto 0) := (others => '0');
-    signal i2c_reply_ready          : std_logic := '0';
-    
+        
     -- global control
     constant GLOBAL_SEL                          : integer := 16#00#;
     constant GLOBAL_RESET_BIT                    : integer := 0;
@@ -96,8 +94,7 @@ begin
 
 	--=============================--
 	sel <= to_integer(unsigned(ipb_mosi_i.ipb_addr(addr_width-1 downto 0))) when addr_width>0 else 0;
-	--=============================--
-	
+	--=============================-- 
 
 	--=============================--
 	process(reset, clk)
@@ -114,28 +111,21 @@ begin
 		command_fifo_we_int <= '0';
 		command_fifo_data_int <= (others => '0');
 		reply_fifo_read_next_o <= '0';
-		i2c_reply_ready <= '0';
 		
 	elsif rising_edge(clk) then
 	    ipb_global_reset <= '0';
-	    if timer = '0' then
-            ctrl_fastblock_o <= ctrl_fastblock_init0;
-            i2c_reset <= '0';
-            i2c_reset_fifos <= '0';
-            command_fifo_we_int <= '0';
-        end if;	
+	    ctrl_fastblock_o <= ctrl_fastblock_init0;
+        i2c_reset <= '0';
+        i2c_reset_fifos <= '0';
+        command_fifo_we_int <= '0';
         reply_fifo_read_next_o <= '0';
-        i2c_reply_ready <= '0';
-        timer <= '0';
-        
-	    
+
 	    --=============================--
         -- write section
         --=============================--
 		if ipb_mosi_i.ipb_strobe='1' and ipb_mosi_i.ipb_write='1'then		  
 
             regs(sel) <= ipb_mosi_i.ipb_wdata;
-            timer <= '1';
             -- here put the command into i2c fifo
             if sel = GLOBAL_SEL then
                 ipb_global_reset <= ipb_mosi_i.ipb_wdata(GLOBAL_RESET_BIT); 
@@ -153,26 +143,21 @@ begin
                 i2c_reset <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_BIT);
                 i2c_reset_fifos <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_FIFOS_BIT);  
             elsif sel = I2C_COMMAND_FIFO_SEL then
-                command_fifo_we_int <= not command_fifo_we_int;
+                command_fifo_we_int <= '1';
                 command_fifo_data_int <= ipb_mosi_i.ipb_wdata;    
             end if;
         end if;
         --=============================--
         -- read section
-        --=============================--   
-        if i2c_reply_ready = '1' then
-            -- reading out reply fifo
-            i2c_reply_ready <= '0';
+        --=============================--
+        
+        if sel = I2C_REPLY_FIFO_SEL and ipb_mosi_i.ipb_strobe = '1' then
+            reply_fifo_read_next_o <= '1'; 
             ipb_miso_o.ipb_rdata <= reply_fifo_data_i;
-            ipb_ack_int <= not ipb_ack_int;        
-        elsif sel = I2C_REPLY_FIFO_SEL then 
-            -- data will be taken only on the next clock cycle
-            reply_fifo_read_next_o <= '1';
-            i2c_reply_ready <= '1';              
         else
-            ipb_miso_o.ipb_rdata <= regs(sel);
-            ipb_ack_int <= ipb_mosi_i.ipb_strobe and not ipb_ack_int;                  
-        end if;             
+            ipb_miso_o.ipb_rdata <= regs(sel);            
+        end if;
+        ipb_ack_int <= ipb_mosi_i.ipb_strobe and not ipb_ack_int;
         --=============================--
 	end if;
 	end process;

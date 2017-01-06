@@ -64,6 +64,7 @@ Port (
     -- statuses from other blocks
     --===================================--
     status_fast_block_fsm   : in std_logic_vector(7 downto 0);
+    test_clock_frequency    : in array_4x32bit;
     --===================================--
     -- errors from other blocks
     --===================================--
@@ -73,7 +74,7 @@ end component;
 
 component answer_block
     Port ( clk : in STD_LOGIC;
-           request_strobe : in STD_LOGIC;
+           i2c_request : in cmd_wbus;
            i2c_reply : out cmd_rbus);
 end component;
 
@@ -114,6 +115,10 @@ signal read                   : std_logic := '1';
 signal register_address       : std_logic_vector(7 downto 0) := x"23";
 signal data                   : std_logic_vector(7 downto 0) := x"AB";
 
+signal ipb_write              : std_logic := '1';
+
+signal test_clock_frequency   : array_4x32bit;
+
 signal ipb_mosi_i      : ipb_wbus_array(0 to nbr_usr_slaves-1);
 signal ipb_miso_o      : ipb_rbus_array(0 to nbr_usr_slaves-1);
 signal strobe      : std_logic := '0';
@@ -129,22 +134,22 @@ signal strobe      : std_logic := '0';
 
 begin
 
-    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_addr <= addr_fast;
-    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_wdata <= command_fast;
-    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_write <= '1';
+    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_addr <= addr_i2c;
+    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_wdata <= command_i2c;
+    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_write <= ipb_write;
     ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_strobe <= strobe;       
 
-    addr_i2c <= x"4000011F";
+    --addr_i2c <= x"40000240";
     command_i2c <= command_type & hybrid_id & chip_id & '0' & use_mask & page & read & register_address & data;
     
-    addr_fast <= x"40000101";
+    addr_fast <= x"40000201";
     command_fast_reset <= x"00000001";
     command_fast_start <= x"00000002";
     command_fast_stop <= x"00000004";
     command_fast_load_config <= x"00000008";    
 
-    UUT: command_processor_core generic map (2,2)
-    port map(clk_40MHz, clk_ipb, reset or ipb_reset, ipb_mosi_i, ipb_miso_o, ipb_reset, fast_block_ctrl, fast_block_cnfg, i2c_request, i2c_reply, fast_block_status_fsm, fast_block_error);
+    UUT: command_processor_core generic map (2,8)
+    port map(clk_40MHz, clk_ipb, reset or ipb_reset, ipb_mosi_i, ipb_miso_o, ipb_reset, fast_block_ctrl, fast_block_cnfg, i2c_request, i2c_reply, fast_block_status_fsm, test_clock_frequency, fast_block_error);
     
     fast_command_block: entity work.fast_command_core
         --===================================--
@@ -171,7 +176,7 @@ begin
         );        
     
     
-    PHY_REPONSE_GENERATOR: answer_block port map(clk_40MHz, i2c_request.cmd_strobe, i2c_reply);
+    PHY_REPONSE_GENERATOR: answer_block port map(clk_40MHz, i2c_request, i2c_reply);
         
     clk40_process: process
     begin
@@ -189,58 +194,81 @@ begin
         wait for clk_ipb_period/2;
     end process;
     
---    i2c_commands_process: process
---    begin
---        ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_addr <= addr_i2c;
---        ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_wdata <= command_i2c;
---        reset <= '1';
---        wait for 200 ns;
---        reset <= '0';
---        wait for 200 ns;
+    i2c_commands_process: process
+    begin
+        reset <= '1';
+        wait for 200 ns;
+        reset <= '0';
+        wait for 200 ns;
+        addr_i2c <= x"40000240";
+        ipb_write <= '1';
 --        command_type <= x"0";
 --        wait for 32 ns;
 --        strobe <= '1';
 --        wait for 32 ns;
 --        strobe <= '0';
 --        wait for 200 ns;
---        command_type <= x"1";
---        wait for 32 ns;
---        strobe <= '1';
---        wait for 32 ns;
---        strobe <= '0';
---        wait for 200 ns;
+        command_type <= x"1";
+        wait for 32 ns;
+        strobe <= '1';
+        wait for 32 ns;
+        strobe <= '0';
+        wait for 3000 ns;
+        addr_i2c <= x"40000250";
+        ipb_write <= '0';
+        wait for 32 ns;
+        strobe <= '1';
+        wait for 32 ns;
+        strobe <= '0';
+        wait for 32 ns;
+        strobe <= '1';
+        wait for 32 ns;
+        strobe <= '0';
+        wait for 32 ns;
+        strobe <= '1';
+        wait for 32 ns;
+        strobe <= '0';
+        wait for 32 ns;
+        strobe <= '1';
+        wait for 32 ns;
+        strobe <= '0';
+        wait for 32 ns;
+        strobe <= '1';
+        wait for 32 ns;
+        strobe <= '0';
 --        command_type <= x"2";
 --        wait for 32 ns;
 --        strobe <= '1';
 --        wait for 32 ns;
 --        strobe <= '0';
---        wait for 10000 ns;
---    end process;
-    
-    triggers_commands_process: process
-    begin
-        reset <= '1';
-                wait for 200 ns;
-                reset <= '0';
-                wait for 200 ns;
-        command_fast <= command_fast_reset;
-                wait for 32 ns;
-                strobe <= '1';
-                wait for 32 ns;
-                strobe <= '0';
-                wait for 200 ns;
-        command_fast <= command_fast_load_config;
-                wait for 32 ns;
-                strobe <= '1';
-                wait for 32 ns;
-                strobe <= '0';
-                wait for 200 ns;
-        command_fast <= command_fast_start;
-                wait for 32 ns;
-                strobe <= '1';
-                wait for 32 ns;
-                strobe <= '0';        
+        
         wait for 10000 ns;
     end process;
+    
+--    triggers_commands_process: process
+--    begin
+--        reset <= '1';
+--                wait for 200 ns;
+--                reset <= '0';
+--                wait for 200 ns;
+--        command_fast <= command_fast_reset;
+--                wait for 32 ns;
+--                strobe <= '1';
+--                wait for 32 ns;
+--                strobe <= '0';
+--                wait for 200 ns;
+--        command_fast <= command_fast_load_config;
+--                wait for 32 ns;
+--                strobe <= '1';
+--                wait for 32 ns;
+--                strobe <= '0';
+--                wait for 200 ns;
+--        command_fast <= command_fast_start;
+--                wait for 32 ns;
+--                strobe <= '1';
+--                wait for 32 ns;
+--                strobe <= '0';        
+--        wait for 10000 ns;
+--    end process;
 
 end Behavioral;

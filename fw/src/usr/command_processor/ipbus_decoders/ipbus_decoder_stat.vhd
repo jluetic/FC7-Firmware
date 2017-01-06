@@ -33,7 +33,8 @@ port (
         -- i2c master statuses
         status_i2c_master_fsm : in  std_logic_vector(3 downto 0);
         error_i2c_master      : in  std_logic_vector(7 downto 0);
-        fifo_statuses         : in  fifo_stat
+        fifo_statuses         : in  fifo_stat;
+        test_clock_frequency    : in array_4x32bit
      );
 end ipbus_decoder_stat;
 
@@ -49,7 +50,18 @@ architecture rtl of ipbus_decoder_stat is
     -- statuses out
     signal status_error_block_id  : std_logic_vector(3 downto 0) := x"0";
     signal status_error_code      : std_logic_vector(7 downto 0) := x"00";   
-     
+    
+     -- i2c chip control
+   constant I2C_COMMANDS_FIFO_STAT_SEL          : integer := 16#50#;
+   constant I2C_COMMANDS_FIFO_EMPTY_BIT         : integer := 0;
+   constant I2C_COMMANDS_FIFO_FULL_BIT          : integer := 1;
+   constant I2C_REPLIES_FIFO_STAT_SEL           : integer := 16#51#;
+   constant I2C_REPLIES_FIFO_EMPTY_BIT          : integer := 0;
+   constant I2C_REPLIES_FIFO_FULL_BIT           : integer := 1;
+   
+   constant TEST_CLOCK_IPB                       : integer := 16#40#;
+   constant TEST_CLOCK_40MHZ                     : integer := 16#41#;
+      
 begin
 
 	--=============================--
@@ -82,11 +94,14 @@ begin
 	regs(0)(15 downto 8)  <= status_fast_block_fsm;
 	regs(0)(3 downto 0) <= status_i2c_master_fsm;
 	
-	regs(50)(0) <= fifo_statuses.i2c_commands_empty;
-	regs(50)(1) <= fifo_statuses.i2c_commands_full;
-	regs(51)(0) <= fifo_statuses.i2c_replies_empty;
-    regs(51)(1) <= fifo_statuses.i2c_replies_full;
-	
+	regs(I2C_COMMANDS_FIFO_STAT_SEL)(I2C_COMMANDS_FIFO_EMPTY_BIT) <= fifo_statuses.i2c_commands_empty;
+	regs(I2C_COMMANDS_FIFO_STAT_SEL)(I2C_COMMANDS_FIFO_FULL_BIT) <= fifo_statuses.i2c_commands_full;
+	regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_EMPTY_BIT) <= fifo_statuses.i2c_replies_empty;
+    regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_FULL_BIT) <= fifo_statuses.i2c_replies_full;
+    
+    regs(TEST_CLOCK_IPB) <= test_clock_frequency(0);
+    regs(TEST_CLOCK_40MHZ) <= test_clock_frequency(1);
+    	
 ERROR_HANDLER: process(reset, clk)
 begin
     if reset = '1' then

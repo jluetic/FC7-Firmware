@@ -44,6 +44,7 @@ entity command_processor_core is
     -- statuses from other blocks
     --===================================--
     status_fast_block_fsm   : in std_logic_vector(7 downto 0);
+    test_clock_frequency    : in array_4x32bit;
     --===================================--
     -- errors from other blocks
     --===================================--
@@ -63,6 +64,7 @@ architecture rtl of command_processor_core is
     signal command_fifo_data_in  : std_logic_vector(31 downto 0);
     signal command_fifo_data_out : std_logic_vector(31 downto 0);
     signal command_fifo_empty    : std_logic;
+    signal command_fifo_empty_to_i2c : std_logic;
     
     signal reply_fifo_we         : std_logic;
     signal reply_fifo_read_next  : std_logic;
@@ -78,7 +80,7 @@ architecture rtl of command_processor_core is
     signal error_i2c_master       : std_logic_vector(7 downto 0);
     signal fifo_statuses          : fifo_stat;
     --==========================--   
-    
+        
 begin
         
      --===================================--
@@ -141,7 +143,9 @@ begin
      -- i2c master statuses
      status_i2c_master_fsm   => status_i2c_master_fsm,
      error_i2c_master       => error_i2c_master,
-     fifo_statuses          => fifo_statuses
+     fifo_statuses          => fifo_statuses,
+     -- clock frequencies tester
+     test_clock_frequency   => test_clock_frequency
     );
     --===================================--    
      
@@ -162,6 +166,7 @@ begin
         full           => fifo_statuses.i2c_commands_full,
         empty          => command_fifo_empty
     );
+    command_fifo_empty_to_i2c <= command_fifo_empty;
     fifo_statuses.i2c_commands_empty <= command_fifo_empty;
     --===================================--
     
@@ -199,7 +204,7 @@ begin
        clk              => clk_40MHz,
        reset            => reset or i2c_reset,
        i2c_mask         => i2c_mask,              
-       command_fifo_empty_i     => command_fifo_empty,
+       command_fifo_empty_i     => command_fifo_empty_to_i2c,
        command_fifo_read_next_o => command_fifo_read_next,
        command_fifo_data_i      => command_fifo_data_out,
        reply_fifo_we_o          => reply_fifo_we,
@@ -207,7 +212,7 @@ begin
        i2c_fsm_status   => status_i2c_master_fsm,
        error_code       => error_i2c_master,
        i2c_request      => i2c_request,
-       i2c_reply        => i2c_reply       
+       i2c_reply        => i2c_reply
     );        
     --===================================--
 

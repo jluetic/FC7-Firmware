@@ -189,6 +189,18 @@ architecture usr of user_core is
     signal fast_block_status_fsm    : std_logic_vector(7 downto 0);
     signal fast_block_error         : std_logic_vector(7 downto 0);
     --===================================--
+    
+    signal test_clock_frequency     : array_4x32bit;
+    COMPONENT clkRateTool32 IS
+    GENERIC (
+      CLKREF_RATE_IN_MHZ : INTEGER
+    );
+    PORT (
+      clkref   : IN  STD_LOGIC;
+      clktest  : IN  STD_LOGIC;
+      clkvalue : IN  STD_LOGIC;
+      value    : OUT STD_LOGIC_VECTOR(31 DOWNTO 0));
+    END COMPONENT clkRateTool32;
 
 begin
 
@@ -272,6 +284,7 @@ begin
         -- statuses from other blocks
         --===================================--
         status_fast_block_fsm   => fast_block_status_fsm,
+        test_clock_frequency    => test_clock_frequency,
         --===================================--
         -- errors from other blocks
         --===================================--
@@ -280,7 +293,7 @@ begin
     --===================================--    
     phy_answer_generator: entity work.answer_block
         port map ( clk              => clk_40MHz,
-                   request_strobe   => i2c_request.cmd_strobe,
+                   i2c_request      => i2c_request,
                    i2c_reply        => i2c_reply);
     
     --===================================--
@@ -352,6 +365,30 @@ begin
     --port map
     --(
     --);        
-    --===================================--  
+    --===================================-- 
+    
+    clkRate0 : clkRateTool32
+    GENERIC MAP (
+       -- clock rate of clkref in MHz
+        CLKREF_RATE_IN_MHZ => 125
+    )  
+    PORT MAP (
+        clkref   => osc125_a_mgtrefclk_i,
+        clktest  => ipb_clk,
+        clkvalue => ipb_clk,
+        value    => test_clock_frequency(0)
+    );
+    
+    clkRate1 : clkRateTool32
+    GENERIC MAP (
+       -- clock rate of clkref in MHz
+        CLKREF_RATE_IN_MHZ => 125
+    )  
+    PORT MAP (
+        clkref   => osc125_a_mgtrefclk_i,
+        clktest  => clk_40MHz,
+        clkvalue => ipb_clk,
+        value    => test_clock_frequency(1)
+    );
 
 end usr;

@@ -8,7 +8,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.user_package.all;
 use work.system_package.all;
-
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 use IEEE.NUMERIC_STD.ALL;
@@ -34,7 +34,7 @@ entity cmd_i2c_master is
            i2c_fsm_status : out STD_LOGIC_VECTOR (3 downto 0);
            error_code : out STD_LOGIC_VECTOR (7 downto 0);
            i2c_request : out cmd_wbus;
-           i2c_reply : in cmd_rbus          
+           i2c_reply : in cmd_rbus
      );
 end cmd_i2c_master;
 
@@ -61,15 +61,17 @@ architecture rtl of cmd_i2c_master is
     --==========================--
     
     
-    type state_type is (Idle, GetCommand, SetCommand, SendCommand, WaitForReply, Finished);
+    type state_type is (Idle, GetCommand, SetCommand, SendCommand, WaitForReply, WriteFifo, Finished);
     signal i2c_fsm_state    : state_type := Idle;
     signal start_sending_loc      : std_logic := '0';
     
     -- counters
-    signal chip_counter           : integer range 0 to NUM_CHIPS-1 := 0;
-    signal hybrid_counter         : integer range 0 to NUM_HYBRIDS-1 := 0;
-
-
+    signal chip_counter           : integer range 0 to NUM_CHIPS := 0;
+    signal hybrid_counter         : integer range 0 to NUM_HYBRIDS := 0;
+    
+    -- write counter, to ensure that fifo is written
+    signal write_counter          : std_logic_vector(1 downto 0) := "00";
+    
 begin
 
 I2C_FSM: process(reset, clk)
@@ -98,11 +100,7 @@ begin
     elsif rising_edge(clk) then
     case i2c_fsm_state is
         when Idle =>        
-            i2c_fsm_status <= x"1";
-            
-            reply_fifo_we_o <= '0';
-            command_fifo_read_next_o <= '0';
-            reply_fifo_data_o <= (others => '0');
+            i2c_fsm_status <= x"1";         
             
             if command_fifo_empty_i = '0' then
                 command_fifo_read_next_o <= '1';
@@ -110,11 +108,12 @@ begin
             end if;
         
         when GetCommand =>
+            i2c_fsm_status <= x"2";
             command_fifo_read_next_o <= '0';
             i2c_fsm_state <= SetCommand;
             
         when SetCommand =>
-            i2c_fsm_status <= x"2";
+            i2c_fsm_status <= x"3";
                                     
             error_code <= x"00";
             chip_counter <= 0;
@@ -132,10 +131,8 @@ begin
             i2c_fsm_state <= SendCommand;
             
         when SendCommand =>
-            i2c_fsm_status <= x"3";
-            
-            reply_fifo_we_o <= '0';
-            
+            i2c_fsm_status <= x"4";
+                        
             -- setting register value to a certain hybrid,chip
             if command_type = x"0" then
                     if(TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS) or (TO_INTEGER(unsigned(chip_id))+1>NUM_CHIPS) then
@@ -150,22 +147,28 @@ begin
                     end if; 
             -- setting register value to all chips within a certain hybrid
             elsif command_type = x"1" then                    
-                    if TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS then
+                    if TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS or chip_counter+1>NUM_CHIPS then
                         -- wrong hybrid or chip id
                         error_code <= x"23";
                         i2c_fsm_state <= Finished;
                     else
                         i2c_request.cmd_hybrid_id <= hybrid_id;
-                        i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id 'length));
+                        i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id'length));
                         i2c_request.cmd_strobe <= '1';
                         i2c_fsm_state <= WaitForReply; 
                     end if;
             -- setting register value to all chips all Hybrids
-            elsif command_type = x"2" then                    
-                    i2c_request.cmd_hybrid_id <= std_logic_vector(to_unsigned(hybrid_counter, i2c_request.cmd_hybrid_id 'length));
-                    i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id 'length));
-                    i2c_request.cmd_strobe <= '1';
-                    i2c_fsm_state <= WaitForReply; 
+            elsif command_type = x"2" then
+                    if hybrid_counter+1>NUM_HYBRIDS or chip_counter+1>NUM_CHIPS then
+                        -- wrong hybrid or chip id
+                        error_code <= x"23";
+                        i2c_fsm_state <= Finished;
+                    else                    
+                        i2c_request.cmd_hybrid_id <= std_logic_vector(to_unsigned(hybrid_counter, i2c_request.cmd_hybrid_id 'length));
+                        i2c_request.cmd_chip_id <= std_logic_vector(to_unsigned(chip_counter, i2c_request.cmd_chip_id'length));
+                        i2c_request.cmd_strobe <= '1';
+                        i2c_fsm_state <= WaitForReply;
+                    end if; 
             else
                     -- wrong command
                     error_code <= x"21";                    
@@ -181,13 +184,12 @@ begin
                 i2c_request.cmd_write_mask <= x"FF";
             end if;
             i2c_request.cmd_data <= data_to_chip;
-            
+                        
         when WaitForReply =>
-            i2c_fsm_status <= x"4";
-            
+            i2c_fsm_status <= x"5";
+            i2c_request.cmd_strobe <= '0';            
             -- will wait for response from phy here
-            if i2c_reply.cmd_strobe = '1' then
-                i2c_request.cmd_strobe <= '0';
+            if i2c_reply.cmd_strobe = '1' then                
                 if i2c_reply.cmd_err = '0' then
                     -- setting register value to a certain hybrid,chip
                     if command_type = x"0" then
@@ -195,7 +197,9 @@ begin
                             reply_fifo_data_o(31 downto 28) <= command_type; 
                             reply_fifo_data_o(27 downto 24) <= hybrid_id; 
                             reply_fifo_data_o(23 downto 20) <= chip_id;
+                            reply_fifo_data_o(19 downto 18) <= "00";
                             reply_fifo_data_o(17) <= page; 
+                            reply_fifo_data_o(16) <= '0';
                             reply_fifo_data_o(15 downto 8) <= register_address; 
                             reply_fifo_data_o(7 downto 0) <= i2c_reply.cmd_data;
                             reply_fifo_we_o <= '1';
@@ -207,14 +211,21 @@ begin
                             reply_fifo_data_o(31 downto 28) <= command_type; 
                             reply_fifo_data_o(27 downto 24) <= hybrid_id; 
                             reply_fifo_data_o(23 downto 20) <= std_logic_vector(to_unsigned(chip_counter, 4)); 
+                            reply_fifo_data_o(19 downto 18) <= "00";
                             reply_fifo_data_o(17) <= page; 
+                            reply_fifo_data_o(16) <= '0'; 
                             reply_fifo_data_o(15 downto 8) <= register_address; 
-                            reply_fifo_data_o(7 downto 0) <= i2c_reply.cmd_data;                            
+                            reply_fifo_data_o(7 downto 0) <= i2c_reply.cmd_data;
                             reply_fifo_we_o <= '1';
                         end if;
                         if chip_counter < NUM_CHIPS-1 then
                             chip_counter <= chip_counter + 1;
-                            i2c_fsm_state <= SendCommand;
+                            if read = '1' then                            
+                                i2c_fsm_state <= WriteFifo;
+                                write_counter <= "00";
+                            else
+                                i2c_fsm_state <= SendCommand;
+                            end if;
                         else
                             i2c_fsm_state <= Finished;
                         end if;
@@ -224,20 +235,32 @@ begin
                             reply_fifo_data_o(31 downto 28) <= command_type; 
                             reply_fifo_data_o(27 downto 24) <= std_logic_vector(to_unsigned(hybrid_counter, 4)); 
                             reply_fifo_data_o(23 downto 20) <= std_logic_vector(to_unsigned(chip_counter, 4)); 
+                            reply_fifo_data_o(19 downto 18) <= "00";
                             reply_fifo_data_o(17) <= page; 
+                            reply_fifo_data_o(16) <= '0'; 
                             reply_fifo_data_o(15 downto 8) <= register_address; 
                             reply_fifo_data_o(7 downto 0) <= i2c_reply.cmd_data;                            
                             reply_fifo_we_o <= '1';
                         end if;
-                        if hybrid_counter <= NUM_HYBRIDS-1 and chip_counter < NUM_CHIPS-1 then
+                        if hybrid_counter < NUM_HYBRIDS and chip_counter < NUM_CHIPS-1 then
                             chip_counter <= chip_counter + 1;
-                            i2c_fsm_state <= SendCommand;
+                            if read = '1' then                            
+                                i2c_fsm_state <= WriteFifo;
+                                write_counter <= "00";
+                            else
+                                i2c_fsm_state <= SendCommand;
+                            end if;
                         elsif hybrid_counter < NUM_HYBRIDS-1 then     
                             chip_counter <= 0;
                             hybrid_counter <= hybrid_counter + 1;
-                            i2c_fsm_state <= SendCommand;
+                            if read = '1' then                            
+                                i2c_fsm_state <= WriteFifo;
+                                write_counter <= "00";
+                            else
+                                i2c_fsm_state <= SendCommand;
+                            end if;
                         else
-                            i2c_fsm_state <= Finished;                            
+                            i2c_fsm_state <= Finished;
                         end if;     
                     else
                         -- status changed during execution
@@ -250,17 +273,21 @@ begin
                     i2c_fsm_state <= Finished;
                 end if;
             end if;
-            
-        when Finished =>
-            i2c_fsm_status <= x"5";
-            
-            reply_fifo_we_o <= '0';
-            if command_fifo_empty_i = '0' then
-                command_fifo_read_next_o <= '1';
-                i2c_fsm_state <= GetCommand;
-            else
-                i2c_fsm_state <= Idle;
+        
+        when WriteFifo =>
+            i2c_fsm_status <= x"6";
+            if write_counter = "01" then
+                reply_fifo_we_o <= '0';            
+            elsif write_counter = "11" then
+                i2c_fsm_state <= SendCommand;   
             end if;
+            write_counter <= write_counter + 1;
+                                                
+        when Finished =>
+            i2c_fsm_status <= x"7";            
+            reply_fifo_we_o <= '0';
+
+            i2c_fsm_state <= Idle;           
             
         when others =>
             i2c_fsm_status <= x"f";

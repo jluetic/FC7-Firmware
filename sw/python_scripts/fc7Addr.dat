@@ -31,6 +31,11 @@ ipb_daq_system_ctrl		40000200    ffffffff     1     1
      ctrl_i2c_command_register	40000240    0000ff00	 1     1
      ctrl_i2c_command_data	40000240    000000ff	 1     1
    ctrl_i2c_reply_fifo          40000250    ffffffff     1     0
+     ctrl_i2c_reply_type	40000250    f0000000	 1     0
+     ctrl_i2c_reply_hybrid_id	40000250    0f000000	 1     0
+     ctrl_i2c_reply_chip_id	40000250    00f00000	 1     0    
+     ctrl_i2c_reply_register	40000250    0000ff00	 1     0
+     ctrl_i2c_reply_data	40000250    000000ff	 1     0   
 
 ipb_daq_system_stat		40000300    ffffffff     1     0
    stat_error_block_id		40000300    f0000000     1     0
@@ -44,4 +49,6 @@ ipb_daq_system_stat		40000300    ffffffff     1     0
    stat_i2c_fifo_commands_full	40000350    00000002     1     0
    stat_i2c_fifo_replies_empty	40000351    00000001     1     0
    stat_i2c_fifo_replies_full	40000351    00000002     1     0
+   stat_rate_ipb		40000340    ffffffff     1     0
+   stat_rate_40mhz	        40000341    ffffffff	 1     0
 

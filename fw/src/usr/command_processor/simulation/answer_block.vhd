@@ -34,7 +34,7 @@ use work.user_package.all;
 
 entity answer_block is
     Port ( clk : in STD_LOGIC;
-           request_strobe : in STD_LOGIC;
+           i2c_request : in cmd_wbus;
            i2c_reply : out cmd_rbus);
 end answer_block;
 
@@ -45,10 +45,10 @@ begin
 response_process: process (clk)
 begin
     if rising_edge(clk) then
-        if request_strobe = '1' then
+        if i2c_request.cmd_strobe = '1' then
             i2c_reply.cmd_strobe <= '1';
             i2c_reply.cmd_err <= '0';
-            i2c_reply.cmd_data <= x"AA";
+            i2c_reply.cmd_data <= x"0" & i2c_request.cmd_chip_id;
         else
             i2c_reply.cmd_strobe <= '0';
             i2c_reply.cmd_err <= '0';

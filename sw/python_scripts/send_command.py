@@ -34,9 +34,6 @@ def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read, register_
   fc7.write("ctrl_i2c_command_fifo", cmd)
   return description
 
-def Read_I2C():
-  print "Data Reply I2C:", hex(fc7.read("ctrl_i2c_reply_fifo"))	  
-
 # Send command ctrl
 def SendCommand_CTRL(name = "none"):
     if name == "none":
@@ -114,61 +111,97 @@ def ReadStatus(name = "Current Status"):
   print "   -> i2c fsm state:", fc7.read("stat_i2c_fsm")
   print "============================"
 
-#def ReadChipData(hybrid_id):
-#  print "Reading Out Data:"
-#  while fc7.read("status_cmd_data_ready") == 1:
-#      print "   Hybrid #", hybrid_id
-#      print "   ======================================="
-#      print "   | Chip ID             || DATA         |"
-#      print "   ======================================="
-#      for id in range(0,8):
-#        print '   | %s %-12i || %-12s |' % ("Chip #", id, hex(fc7.read("chip_data_"+str(id)))[:4])
-#        print "    ---------------------------------------"
-#      print "   ======================================="
+def DataFromMask(data, mask_name):
+  return fc7AddrTable.getItem(mask_name).shiftDataFromMask(data)
 
+def ReadChipData():
+  print "Reading Out Data:"
+  print "   ================================================================"
+  print "   | Hybrid ID             || Chip ID             || DATA         |"
+  print "   ================================================================"
 
-#############
+  while fc7.read("stat_i2c_fifo_replies_empty") == 0:
+      reply = fc7.read("ctrl_i2c_reply_fifo")
+      hybrid_id = DataFromMask(reply, "ctrl_i2c_reply_hybrid_id")
+      chip_id = DataFromMask(reply, "ctrl_i2c_reply_chip_id")
+      data = DataFromMask(reply, "ctrl_i2c_reply_data")
+      #print bin(fc7.read("ctrl_i2c_command_fifo"))
+      #print bin(reply)[4:12]
+      print '   | %s %-12i || %s %-12i || %-12s |' % ("Hybrid #", hybrid_id, "Chip #", chip_id, hex(data)[:4])
+      print "    --------------------------------------------------------------"
+  print "   ================================================================"    
 
-###############
-## i2c region #
-###############
-command_i2c = 0
-hybrid_id = 1
-chip_id = 1
-use_mask = 0
-page = 0
-# 0 - write, 1 - read
-read = 1
-register = 24
-data = 13
-################
+def ReadChipDataTest():
+  print "!!!!!!!!!!!!!!!! Reading Out Data (TEST): !!!!!!!!!!!!!"
+  print "   ================================================================"
+  print "   | Hybrid ID             || Chip ID             || DATA         |"
+  print "   ================================================================"
+  for i in range(0,8):
+      reply = fc7.read("data_chip_"+str(i))
+      hybrid_id = DataFromMask(reply, "ctrl_i2c_reply_hybrid_id")
+      chip_id = DataFromMask(reply, "ctrl_i2c_reply_chip_id")
+      data = DataFromMask(reply, "ctrl_i2c_reply_data")
+      print '   | %s %-12i || %s %-12i || %-12s |' % ("Hybrid #", hybrid_id, "Chip #", chip_id, hex(data)[:4])
+      print "    --------------------------------------------------------------"
+  print "   ================================================================"    
 
-################
-## fast region #
-################
-trigger_source = 3
-triggers_to_accept = 0
-trigger_divider = 2
-trigger_stubs_mask = 3
-################
+# tests the fast commands
+def FastTester():
+	################
+	## fast config #
+	################
+	trigger_source = 3
+	triggers_to_accept = 0
+	trigger_divider = 2
+	trigger_stubs_mask = 3
+	################
+	
+	ReadStatus("Before Configuration")
+	Configure_Fast(triggers_to_accept, trigger_divider, trigger_source, trigger_stubs_mask)
+	ReadStatus("Configured")
+	SendCommand_CTRL("start_trigger")
+	ReadStatus("Trigger Started")
+	sleep(2)
+	ReadStatus("After Checker")
+	SendCommand_CTRL("stop_trigger")
+	ReadStatus("Trigger Stopped")
 
-ReadStatus()
-#Configure_I2C(255)
-#ReadStatus()
-#SendCommand_CTRL("reset_i2c")
-#ReadStatus()
-#for i in range(1,1000):
-#	if i%100 == 0:
-#		ReadStatus("temp")
-#		SendCommand_I2C(command_i2c, hybrid_id, chip_id, use_mask, page, read, register, data)
-Configure_Fast(triggers_to_accept, trigger_divider, trigger_source, trigger_stubs_mask)
-ReadStatus()
-SendCommand_CTRL("start_trigger")
-ReadStatus()
-sleep(2)
-ReadStatus()
-SendCommand_CTRL("stop_trigger")
-ReadStatus()
+# tests i2c master
+def I2CTester():
+	###############
+	## i2c config #
+	###############
+	command_i2c = 1
+	hybrid_id = 1
+	chip_id = 2
+	use_mask = 0
+	page = 1
+	# 0 - write, 1 - read
+	read = 1
+	register = 2
+	data = 15
+	################
+	
+	ReadStatus("Before I2C Configuration")
+	Configure_I2C(255)
+	ReadStatus("After I2C Configuration")
+	SendCommand_CTRL("reset_i2c")
+	ReadStatus("After I2C Reset")
+	
+	#for i in range (0,3):
+	#SendCommand_I2C(0, hybrid_id, chip_id, use_mask, page, read, register, data)
+	SendCommand_I2C(command_i2c, hybrid_id, chip_id, use_mask, page, read, register, data)
 
-#while(fc7.read("stat_i2c_fifo_replies_empty")==0):
-#	Read_I2C()
+	
+	ReadStatus("After Send Command")
+	ReadChipData()
+	#ReadChipDataTest()
+	ReadStatus("After Read Reply")	
+
+####################
+## Program Running #
+####################
+#FastTester()
+I2CTester()
+print "IPBus Clock Rate: ", fc7.read("stat_rate_ipb")
+print "40MHz Clock Rate: ", fc7.read("stat_rate_40mhz")
