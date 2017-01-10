@@ -39,25 +39,19 @@ def SendCommand_CTRL(name = "none"):
     if name == "none":
         print "Sending nothing"
     elif name == "global_reset":
-        #fc7.write("ctrl_global_reset", 1)
 	fc7.write("ctrl_global", fc7AddrTable.getItem("ctrl_global_reset").shiftDataToMask(1))
+	#fc7.write("ctrl_global", 16)
     elif name == "reset_trigger":
-        #fc7.write("ctrl_fast_reset", 1)
 	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_reset").shiftDataToMask(1))
     elif name == "start_trigger":
-        #fc7.write("ctrl_fast_start", 1)
 	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_start").shiftDataToMask(1))
     elif name == "stop_trigger":
-        #fc7.write("ctrl_fast_stop", 1)
 	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_stop").shiftDataToMask(1))
     elif name == "load_config":
-        #fc7.write("ctrl_fast_load_config", 1)
 	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_load_config").shiftDataToMask(1))
     elif name == "reset_i2c":
-        #fc7.write("ctrl_i2c_reset", 1)
 	fc7.write("ctrl_i2c", fc7AddrTable.getItem("ctrl_i2c_reset").shiftDataToMask(1))
     elif name == "reset_i2c_fifos":
-        #fc7.write("ctrl_i2c_reset_fifos", 1)
 	fc7.write("ctrl_i2c", fc7AddrTable.getItem("ctrl_i2c_reset_fifos").shiftDataToMask(1))
     else:
         print "Unknown Command"
@@ -111,6 +105,10 @@ def ReadStatus(name = "Current Status"):
   print "   -> i2c fsm state:", fc7.read("stat_i2c_fsm")
   print "============================"
 
+def CheckClockFrequencies():
+  print "IPBus Clock Rate: ", fc7.read("stat_rate_ipb")/10000.0, "MHz"
+  print "40MHz Clock Rate: ", fc7.read("stat_rate_40mhz")/10000.0, "MHz"
+
 def DataFromMask(data, mask_name):
   return fc7AddrTable.getItem(mask_name).shiftDataFromMask(data)
 
@@ -127,20 +125,6 @@ def ReadChipData():
       data = DataFromMask(reply, "ctrl_i2c_reply_data")
       #print bin(fc7.read("ctrl_i2c_command_fifo"))
       #print bin(reply)[4:12]
-      print '   | %s %-12i || %s %-12i || %-12s |' % ("Hybrid #", hybrid_id, "Chip #", chip_id, hex(data)[:4])
-      print "    --------------------------------------------------------------"
-  print "   ================================================================"    
-
-def ReadChipDataTest():
-  print "!!!!!!!!!!!!!!!! Reading Out Data (TEST): !!!!!!!!!!!!!"
-  print "   ================================================================"
-  print "   | Hybrid ID             || Chip ID             || DATA         |"
-  print "   ================================================================"
-  for i in range(0,8):
-      reply = fc7.read("data_chip_"+str(i))
-      hybrid_id = DataFromMask(reply, "ctrl_i2c_reply_hybrid_id")
-      chip_id = DataFromMask(reply, "ctrl_i2c_reply_chip_id")
-      data = DataFromMask(reply, "ctrl_i2c_reply_data")
       print '   | %s %-12i || %s %-12i || %-12s |' % ("Hybrid #", hybrid_id, "Chip #", chip_id, hex(data)[:4])
       print "    --------------------------------------------------------------"
   print "   ================================================================"    
@@ -172,30 +156,26 @@ def I2CTester():
 	## i2c config #
 	###############
 	command_i2c = 1
-	hybrid_id = 1
+	hybrid_id = 0
 	chip_id = 2
 	use_mask = 0
 	page = 1
 	# 0 - write, 1 - read
 	read = 1
-	register = 2
+	register = 23
 	data = 15
 	################
 	
 	ReadStatus("Before I2C Configuration")
 	Configure_I2C(255)
 	ReadStatus("After I2C Configuration")
-	SendCommand_CTRL("reset_i2c")
-	ReadStatus("After I2C Reset")
-	
-	#for i in range (0,3):
-	#SendCommand_I2C(0, hybrid_id, chip_id, use_mask, page, read, register, data)
+
+	#for i in range (0,6):
+		#SendCommand_I2C(0, hybrid_id, chip_id, use_mask, page, read, register, data)
 	SendCommand_I2C(command_i2c, hybrid_id, chip_id, use_mask, page, read, register, data)
 
-	
 	ReadStatus("After Send Command")
 	ReadChipData()
-	#ReadChipDataTest()
 	ReadStatus("After Read Reply")	
 
 ####################
@@ -203,5 +183,4 @@ def I2CTester():
 ####################
 #FastTester()
 I2CTester()
-print "IPBus Clock Rate: ", fc7.read("stat_rate_ipb")
-print "40MHz Clock Rate: ", fc7.read("stat_rate_40mhz")
+CheckClockFrequencies()

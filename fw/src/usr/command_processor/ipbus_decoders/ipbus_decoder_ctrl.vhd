@@ -63,6 +63,8 @@ architecture rtl of ipbus_decoder_ctrl is
     
     signal command_fifo_we_int      : std_logic := '0';
     signal command_fifo_data_int    : std_logic_vector(31 downto 0) := (others => '0');
+    
+    signal reset_needed             : std_logic := '0';
         
     -- global control
     constant GLOBAL_SEL                          : integer := 16#00#;
@@ -104,6 +106,7 @@ begin
 		regs 	 <= (others=> (others=>'0'));
 		ipb_ack_int 	 <= '0';
 		
+		reset_needed <= '0';
 		ipb_global_reset <= '0';
 		
 		ctrl_fastblock_o <= ctrl_fastblock_init0;
@@ -120,6 +123,11 @@ begin
         command_fifo_we_int <= '0';
         reply_fifo_read_next_o <= '0';
 
+        -- one clock cycle delay before reset, otherwise computer will not receive the confirmation
+        if reset_needed = '1' then
+            ipb_global_reset <= '1';
+            reset_needed <= '0';
+        end if;
 	    --=============================--
         -- write section
         --=============================--
@@ -128,7 +136,7 @@ begin
             regs(sel) <= ipb_mosi_i.ipb_wdata;
             -- here put the command into i2c fifo
             if sel = GLOBAL_SEL then
-                ipb_global_reset <= ipb_mosi_i.ipb_wdata(GLOBAL_RESET_BIT); 
+                reset_needed <= ipb_mosi_i.ipb_wdata(GLOBAL_RESET_BIT); 
             elsif sel = SCG_SEL then
                 ctrl_fastblock_o.cmd_strobe <= '1';
                 ctrl_fastblock_o.reset <= ipb_mosi_i.ipb_wdata(SCG_RESET_BIT);
