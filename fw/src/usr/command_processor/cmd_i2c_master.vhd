@@ -61,7 +61,7 @@ architecture rtl of cmd_i2c_master is
     --==========================--
     
     
-    type state_type is (Idle, GetCommand, SetCommand, SendCommand, WaitForReply, WriteFifo, Finished);
+    type state_type is (Idle, SetCommand, SendCommand, WaitForReply, WriteFifo, Finished);
     signal i2c_fsm_state    : state_type := Idle;
     signal start_sending_loc      : std_logic := '0';
     
@@ -71,7 +71,7 @@ architecture rtl of cmd_i2c_master is
     
     -- write counter, to ensure that fifo is written
     signal write_counter          : std_logic_vector(1 downto 0) := "00";
-    
+        
 begin
 
 I2C_FSM: process(reset, clk)
@@ -82,9 +82,11 @@ begin
         i2c_fsm_status <= x"1";
         error_code <= x"00";
         
+        command_fifo_read_next_o <= '0';
+        
         reply_fifo_we_o <= '0';
         reply_fifo_data_o <= (others => '0');
-        
+                
         chip_counter <= 0;
         hybrid_counter <= 0;
                 
@@ -96,25 +98,19 @@ begin
         i2c_request.cmd_write_mask <= (others => '1');
         i2c_request.cmd_data <= (others => '0');        
         i2c_request.cmd_strobe <= '0'; 
-        
+                
     elsif rising_edge(clk) then
     case i2c_fsm_state is
         when Idle =>        
-            i2c_fsm_status <= x"1";         
-            
-            if command_fifo_empty_i = '0' then
-                command_fifo_read_next_o <= '1';
-                i2c_fsm_state <= GetCommand;
+            i2c_fsm_status <= x"1";                   
+                        
+            if command_fifo_empty_i = '0' then                
+                i2c_fsm_state <= SetCommand;
             end if;
-        
-        when GetCommand =>
-            i2c_fsm_status <= x"2";
-            command_fifo_read_next_o <= '0';
-            i2c_fsm_state <= SetCommand;
             
         when SetCommand =>
-            i2c_fsm_status <= x"3";
-                                    
+            i2c_fsm_status <= x"2";      
+                    
             error_code <= x"00";
             chip_counter <= 0;
             hybrid_counter <= 0;
@@ -128,11 +124,13 @@ begin
             register_address <= command_fifo_data_i(15 downto 8);
             data_to_chip <= command_fifo_data_i(7 downto 0);
             
+            command_fifo_read_next_o <= '1';            
             i2c_fsm_state <= SendCommand;
             
         when SendCommand =>
-            i2c_fsm_status <= x"4";
-                        
+            i2c_fsm_status <= x"3";
+ 
+            write_counter <= "00";
             -- setting register value to a certain hybrid,chip
             if command_type = x"0" then
                     if(TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS) or (TO_INTEGER(unsigned(chip_id))+1>NUM_CHIPS) then
@@ -186,7 +184,10 @@ begin
             i2c_request.cmd_data <= data_to_chip;
                         
         when WaitForReply =>
-            i2c_fsm_status <= x"5";
+            i2c_fsm_status <= x"4";
+            -- TODO: very strange, fifo needs two clock cycles to read set empty flag to 0, otherwise it executes all the commands twice. the line below should be in SendCommand state
+            command_fifo_read_next_o <= '0';     
+            
             i2c_request.cmd_strobe <= '0';            
             -- will wait for response from phy here
             if i2c_reply.cmd_strobe = '1' then                
@@ -222,7 +223,6 @@ begin
                             chip_counter <= chip_counter + 1;
                             if read = '1' then                            
                                 i2c_fsm_state <= WriteFifo;
-                                write_counter <= "00";
                             else
                                 i2c_fsm_state <= SendCommand;
                             end if;
@@ -246,7 +246,6 @@ begin
                             chip_counter <= chip_counter + 1;
                             if read = '1' then                            
                                 i2c_fsm_state <= WriteFifo;
-                                write_counter <= "00";
                             else
                                 i2c_fsm_state <= SendCommand;
                             end if;
@@ -255,7 +254,6 @@ begin
                             hybrid_counter <= hybrid_counter + 1;
                             if read = '1' then                            
                                 i2c_fsm_state <= WriteFifo;
-                                write_counter <= "00";
                             else
                                 i2c_fsm_state <= SendCommand;
                             end if;
@@ -275,7 +273,7 @@ begin
             end if;
         
         when WriteFifo =>
-            i2c_fsm_status <= x"6";
+            i2c_fsm_status <= x"5";
             if write_counter = "01" then
                 reply_fifo_we_o <= '0';            
             elsif write_counter = "11" then
@@ -284,10 +282,15 @@ begin
             write_counter <= write_counter + 1;
                                                 
         when Finished =>
-            i2c_fsm_status <= x"7";            
-            reply_fifo_we_o <= '0';
-
-            i2c_fsm_state <= Idle;           
+            i2c_fsm_status <= x"6";
+            command_fifo_read_next_o <= '0';
+                        
+            if write_counter = "01" then
+                reply_fifo_we_o <= '0';            
+            elsif write_counter = "11" then
+                i2c_fsm_state <= Idle;   
+            end if;
+            write_counter <= write_counter + 1;          
             
         when others =>
             i2c_fsm_status <= x"f";

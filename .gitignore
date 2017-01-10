@@ -1,1 +1,3 @@
 fw/prj/fpga_fc7_daq_firmware/*
+fw/src/usr/command_processor/i2c_replies_fifo
+fw/src/usr/command_processor/i2c_commands_fifo
