@@ -116,6 +116,7 @@ begin
 		reply_fifo_read_next_o <= '0';
 		
 	elsif rising_edge(clk) then
+	    regs <= (others=> (others=>'0'));
 	    ipb_global_reset <= '0';
 	    ctrl_fastblock_o <= ctrl_fastblock_init0;
         i2c_reset <= '0';
@@ -132,7 +133,6 @@ begin
         -- write section
         --=============================--
 		if ipb_mosi_i.ipb_strobe='1' and ipb_mosi_i.ipb_write='1'then		  
-
             regs(sel) <= ipb_mosi_i.ipb_wdata;
             -- here put the command into i2c fifo
             if sel = GLOBAL_SEL then
