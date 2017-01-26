@@ -40,84 +40,48 @@ end sim_command_processor_core;
 
 architecture Behavioral of sim_command_processor_core is
 
-component command_processor_core
-Port ( 
-    clk_40MHz       : in std_logic;
-    ipb_clk         : in std_logic;
-    reset           : in std_logic;   
-    -- command from IpBus
-    ipb_mosi_i      : in  ipb_wbus_array(0 to nbr_usr_slaves-1);
-    ipb_miso_o      : out ipb_rbus_array(0 to nbr_usr_slaves-1);
-    -- global control
-    ipb_global_reset_o  : out std_logic; 
-    -- fast command block control line
-    ctrl_fastblock_o  : out ctrl_fastblock;
-    cnfg_fastblock_o  : out cnfg_fastblock;
-    -- output i2c command
-    i2c_request     : out cmd_wbus;
-    i2c_reply        : in cmd_rbus;
-    --===================================--
-    -- statuses from other blocks
-    --===================================--
-    status_fast_block_fsm   : in std_logic_vector(7 downto 0);
-    test_clock_frequency    : in array_4x32bit;
-    --===================================--
-    -- errors from other blocks
-    --===================================--
-    error_fast_block        : in std_logic_vector(7 downto 0)
-);
-end component;
-
-component answer_block
-    Port ( clk : in STD_LOGIC;
-           i2c_request : in cmd_wbus;
-           i2c_reply : out cmd_rbus);
-end component;
-
-constant clk40_period : time := 25 ns;
-constant clk_ipb_period : time := 32 ns;
-
-signal clk_40MHz : std_logic;
-signal clk_ipb : std_logic;
-
-signal command_i2c : std_logic_vector(31 downto 0);
-signal addr_i2c : std_logic_vector(31 downto 0);
-signal command_fast : std_logic_vector(31 downto 0);
-signal addr_fast : std_logic_vector(31 downto 0);
-signal command_fast_reset : std_logic_vector(31 downto 0);
-signal command_fast_start : std_logic_vector(31 downto 0);
-signal command_fast_stop : std_logic_vector(31 downto 0);
-signal command_fast_load_config : std_logic_vector(31 downto 0);
-
-
-signal ipb_reset    : std_logic;
-signal i2c_request              : cmd_wbus;
-signal i2c_reply                : cmd_rbus;
-
-signal reset                  : std_logic := '0';
-
-signal command_type           : std_logic_vector(3 downto 0) := (others => '0');
--- hybrid_id
-signal hybrid_id              : std_logic_vector(3 downto 0) := x"0";
--- cbc on hybrid id
-signal chip_id                : std_logic_vector(3 downto 0) := x"1";
--- use mask
-signal use_mask               : std_logic := '0';
--- page in the CBC
-signal page                   : std_logic := '0';
--- read or write setting
-signal read                   : std_logic := '1';
--- register_address
-signal register_address       : std_logic_vector(7 downto 0) := x"23";
-signal data                   : std_logic_vector(7 downto 0) := x"AB";
-
-signal ipb_write              : std_logic := '1';
-
-signal test_clock_frequency   : array_4x32bit;
-
-signal ipb_mosi_i      : ipb_wbus_array(0 to nbr_usr_slaves-1);
-signal ipb_miso_o      : ipb_rbus_array(0 to nbr_usr_slaves-1);
-signal strobe      : std_logic := '0';
+    -- clock definition
+    constant clk40_period : time := 25 ns;
+    constant clk_ipb_period : time := 32 ns;    
+    signal clk_40MHz : std_logic;
+    signal clk_ipb : std_logic;
+    
+    -- command_type
+    type ipb_command_type is (i2c_write, i2c_read, fast);
+    type fast_command_type is (fast_reset, start, stop, load_config);
+        
+    signal ipb_reset    : std_logic;
+    signal i2c_request              : cmd_wbus;
+    signal i2c_reply                : cmd_rbus;
+    
+    signal reset                  : std_logic := '0';
+    
+    signal i2c_command_type           : std_logic_vector(3 downto 0) := (others => '0');
+    -- hybrid_id
+    signal hybrid_id              : std_logic_vector(3 downto 0) := x"0";
+    -- cbc on hybrid id
+    signal chip_id                : std_logic_vector(3 downto 0) := x"1";
+    -- use mask
+    signal use_mask               : std_logic := '0';
+    -- page in the CBC
+    signal page                   : std_logic := '0';
+    -- read or write setting
+    signal read                   : std_logic := '1';
+    -- register_address
+    signal register_address       : std_logic_vector(7 downto 0) := x"23";
+    signal data                   : std_logic_vector(7 downto 0) := x"AB";
+    
+    signal ipb_strobe             : std_logic := '0';
+    signal ipb_write              : std_logic := '1';
+    signal ipb_addr : std_logic_vector(31 downto 0);
+    signal ipb_wdata : std_logic_vector(31 downto 0);
+    
+    signal command_i2c : std_logic_vector(31 downto 0);
+    
+    signal test_clock_frequency   : array_4x32bit;
+    
+    signal ipb_mosi_i      : ipb_wbus_array(0 to nbr_usr_slaves-1);
+    signal ipb_miso_o      : ipb_rbus_array(0 to nbr_usr_slaves-1);
 
     -- Control bus from Command Processor Block to Fast Command Block
     signal fast_block_ctrl       : ctrl_fastblock;
@@ -127,24 +91,93 @@ signal strobe      : std_logic := '0';
     signal hybrid_stubs             : std_logic_vector(2 downto 1);
     signal fast_block_status_fsm    : std_logic_vector(7 downto 0);
     signal fast_block_error         : std_logic_vector(7 downto 0);
-
-begin
-
-    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_addr <= addr_i2c;
-    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_wdata <= command_i2c;
-    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_write <= ipb_write;
-    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_strobe <= strobe;       
-
-    --addr_i2c <= x"40000240";
-    command_i2c <= command_type & hybrid_id & chip_id & '0' & use_mask & page & read & register_address & data;
     
-    addr_fast <= x"40000201";
-    command_fast_reset <= x"00000001";
-    command_fast_start <= x"00000002";
-    command_fast_stop <= x"00000004";
-    command_fast_load_config <= x"00000008";    
+        --===================================--
+    -- needed procedures
+    --===================================--        
+   
+    function address(ipb_command_type_i      : in ipb_command_type)
+    return std_logic_vector is
+        variable address    : std_logic_vector(31 downto 0);
+    begin        
+        if ipb_command_type_i = i2c_write then
+            address := x"40000240";
+        elsif ipb_command_type_i = i2c_read then
+            address := x"40000250";
+        elsif ipb_command_type_i = fast then
+            address := x"40000201";
+        end if;
+    return address;
+    end address;
+    
+    function fast_command(fast_command_type_i      : in fast_command_type)
+    return std_logic_vector is
+        variable command    : std_logic_vector(31 downto 0);
+    begin
+    
+        if fast_command_type_i = fast_reset then
+            command := x"00000001";
+        elsif fast_command_type_i = start then
+           command := x"00000002";
+        elsif fast_command_type_i = stop then
+           command := x"00000004";
+        elsif fast_command_type_i = load_config then
+           command := x"00000008"; 
+        end if;
+    return command;        
+    end fast_command;
 
-    UUT: command_processor_core port map(clk_40MHz, clk_ipb, reset or ipb_reset, ipb_mosi_i, ipb_miso_o, ipb_reset, fast_block_ctrl, fast_block_cnfg, i2c_request, i2c_reply, fast_block_status_fsm, test_clock_frequency, fast_block_error);
+begin 
+
+    --===================================--
+    -- clocks
+    --===================================--    
+    clk40_process: process
+    begin
+        clk_40MHz <= '1';
+        wait for clk40_period/2;
+        clk_40MHz <= '0';
+        wait for clk40_period/2;
+    end process;
+    
+    clk_ipb_process: process
+    begin
+        clk_ipb <= '1';
+        wait for clk_ipb_period/2;
+        clk_ipb <= '0';
+        wait for clk_ipb_period/2;
+    end process;    
+
+    --===================================--
+    -- port maps
+    --===================================--  
+
+    command_processor_block: entity work.command_processor_core
+    port map( 
+        clk_40MHz           => clk_40MHz,
+        ipb_clk             => clk_ipb,
+        reset               => reset or ipb_reset,   
+        -- command from IpBus
+        ipb_mosi_i          => ipb_mosi_i,
+        ipb_miso_o          => ipb_miso_o,
+        -- global control
+        ipb_global_reset_o  => ipb_reset,
+        -- fast command block control line
+        ctrl_fastblock_o    => fast_block_ctrl,
+        cnfg_fastblock_o    => fast_block_cnfg,
+        -- output i2c command
+        i2c_request         => i2c_request,
+        i2c_reply           => i2c_reply,
+        --===================================--
+        -- statuses from other blocks
+        --===================================--
+        status_fast_block_fsm   => fast_block_status_fsm,
+        test_clock_frequency    => test_clock_frequency,
+        --===================================--
+        -- errors from other blocks
+        --===================================--
+        error_fast_block        => fast_block_error
+    );
     
     fast_command_block: entity work.fast_command_core
         --===================================--
@@ -162,104 +195,103 @@ begin
             trigger_status_out      => fast_block_status_fsm,
             -- fast command block error
             error_code              => fast_block_error,
-            -- output trigger to Hybrids
-            trigger_out             => open
+            -- output fast signals to phy_block
+            fast_signal             => open
         );        
     
-    
-    PHY_REPONSE_GENERATOR: answer_block port map(clk_40MHz, i2c_request, i2c_reply);
-        
-    clk40_process: process
+    PHY_RESPONSE_GENERATOR: entity work.answer_block
+    port map ( clk          => clk_40MHz,
+               i2c_request  => i2c_request,
+               i2c_reply    => i2c_reply);
+ 
+    command_i2c <= i2c_command_type & hybrid_id & chip_id & '0' & use_mask & page & read & register_address & data;
+               
+    --===================================--
+    -- execution
+    --===================================--               
+
+    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_addr  <= ipb_addr;
+    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_wdata <= ipb_wdata;
+    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_strobe <= ipb_strobe;
+    ipb_mosi_i(ipb_daq_system_ctrl_sel).ipb_write <= ipb_write;
+
+    commands_process: process
     begin
-        clk_40MHz <= '1';
-        wait for clk40_period/2;
-        clk_40MHz <= '0';
-        wait for clk40_period/2;
-    end process;
-    
-    clk_ipb_process: process
-    begin
-        clk_ipb <= '1';
-        wait for clk_ipb_period/2;
-        clk_ipb <= '0';
-        wait for clk_ipb_period/2;
-    end process;
-    
-    i2c_commands_process: process
-    begin
+        -- initialization
         reset <= '1';
         wait for 200 ns;
         reset <= '0';
         wait for 200 ns;
-        addr_i2c <= x"40000240";
-        ipb_write <= '1';
---        command_type <= x"0";
---        wait for 32 ns;
---        strobe <= '1';
---        wait for 32 ns;
---        strobe <= '0';
---        wait for 200 ns;
-        command_type <= x"1";
-        wait for 32 ns;
-        strobe <= '1';
-        wait for 32 ns;
-        strobe <= '0';
-        wait for 3000 ns;
-        addr_i2c <= x"40000250";
-        ipb_write <= '0';
-        wait for 32 ns;
-        strobe <= '1';
-        wait for 32 ns;
-        strobe <= '0';
-        wait for 32 ns;
-        strobe <= '1';
-        wait for 32 ns;
-        strobe <= '0';
-        wait for 32 ns;
-        strobe <= '1';
-        wait for 32 ns;
-        strobe <= '0';
-        wait for 32 ns;
-        strobe <= '1';
-        wait for 32 ns;
-        strobe <= '0';
-        wait for 32 ns;
-        strobe <= '1';
-        wait for 32 ns;
-        strobe <= '0';
---        command_type <= x"2";
---        wait for 32 ns;
---        strobe <= '1';
---        wait for 32 ns;
---        strobe <= '0';
         
+        --=======================--
+        -- send i2c command
+        --=======================--
+        ipb_addr <= address(i2c_write);
+        -- 0 - certain hybrid/chip, 1 - all chips on hybrid, 2 - all hybrids all chups
+        i2c_command_type <= x"1";
+        -- combined from hybrid id, chip id, read, page, etc.. see in signal definition
+        ipb_wdata   <= command_i2c;
+        ipb_write <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '0';        
+        wait for 500 ns;        
+        
+        --=======================--
+        -- read i2c reply
+        --=======================--
+        ipb_addr <= address(i2c_read);
+        ipb_wdata   <= x"00000000";
+        ipb_write <= '0';
+            wait for 32 ns;
+            ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '0';
+        wait for 100 ns;
+        
+        --=======================--
+        -- config trigger source to User-Defined Frequency (will be 40 MHz now)
+        -- see fc7Addr.dat in python scripts to understand the values
+        --=======================--
+        
+        ipb_mosi_i(ipb_daq_system_cnfg_sel).ipb_addr  <= x"40000128";
+        -- 1 - l1, 2 - stubs, 3 - user-defined
+        ipb_mosi_i(ipb_daq_system_cnfg_sel).ipb_wdata <= x"00000003";
+        ipb_mosi_i(ipb_daq_system_cnfg_sel).ipb_write <= '1';
+            wait for 32 ns;
+            ipb_mosi_i(ipb_daq_system_cnfg_sel).ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_mosi_i(ipb_daq_system_cnfg_sel).ipb_strobe <= '0';
+        wait for 100 ns;
+        
+        --=======================--
+        -- play with triggers
+        --=======================--
+        ipb_addr <= address(fast);  
+        ipb_write <= '1';      
+        ipb_wdata <= fast_command(load_config);
+            wait for 32 ns;
+            ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '0';
+        wait for 100 ns;
+        
+        ipb_wdata <= fast_command(start);
+            wait for 32 ns;
+            ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '0';
+        wait for 1000 ns;
+        
+        ipb_wdata <= fast_command(stop);
+            wait for 32 ns;
+            ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '0';
+        
+        -- wait at the end    
         wait for 10000 ns;
     end process;
-    
---    triggers_commands_process: process
---    begin
---        reset <= '1';
---                wait for 200 ns;
---                reset <= '0';
---                wait for 200 ns;
---        command_fast <= command_fast_reset;
---                wait for 32 ns;
---                strobe <= '1';
---                wait for 32 ns;
---                strobe <= '0';
---                wait for 200 ns;
---        command_fast <= command_fast_load_config;
---                wait for 32 ns;
---                strobe <= '1';
---                wait for 32 ns;
---                strobe <= '0';
---                wait for 200 ns;
---        command_fast <= command_fast_start;
---                wait for 32 ns;
---                strobe <= '1';
---                wait for 32 ns;
---                strobe <= '0';        
---        wait for 10000 ns;
---    end process;
 
 end Behavioral;

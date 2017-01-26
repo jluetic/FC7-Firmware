@@ -32,8 +32,8 @@ entity fast_command_core is
     trigger_status_out    : out std_logic_vector(7 downto 0);
     -- fast command block error
     error_code            : out std_logic_vector(7 downto 0);
-    -- output trigger to Hybrids (temporary, for tests)
-    trigger_out           : out std_logic
+    -- output fast signals to phy_block
+    fast_signal           : out cmd_fastbus
   );
 end fast_command_core;
 
@@ -54,6 +54,7 @@ architecture rtl of fast_command_core is
     
     -- trigger signals 
     signal trigger_i                : std_logic;
+    signal trigger_o                : std_logic;
     signal stubs_user_muxed         : std_logic;
     signal clock_enable             : std_logic := '0';
     signal user_trigger             : std_logic;
@@ -111,6 +112,10 @@ port map
 --===================================--
 
 --===================================--
+-- BEGIN TRIGGER MUX
+--===================================--
+
+--===================================--
 MUX_Stubs_User : BUFGCTRL  
 --===================================--
 generic map (  
@@ -155,9 +160,24 @@ BufGCE_Out : BUFGCE
 --===================================--
 port map (
     I   => trigger_i,
-    O   => trigger_out,
+    O   => trigger_o,
     CE  => clock_enable
 );
+--===================================--
+
+--===================================--
+-- END TRIGGER MUX
+--===================================--
+
+--===================================--
+-- BEGIN FAST SIGNALS
+--===================================--
+fast_signal.fast_reset <= ctrl_fastblock_i.ipb_fast_reset or reset_int;
+fast_signal.orbit_reset <= ctrl_fastblock_i.ipb_orbit_reset or reset_int;
+fast_signal.trigger <= ctrl_fastblock_i.ipb_trigger or trigger_o;
+fast_signal.test_pulse_trigger <= ctrl_fastblock_i.ipb_test_pulse;
+--===================================--
+-- END FAST SIGNALS
 --===================================--
 
 COMMAND_HANDLER: process (reset_int, clk_40MHz)

@@ -53,8 +53,8 @@ in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
 trigger_status_out    : out std_logic_vector(7 downto 0);
 -- fast command block error
 error_code            : out std_logic_vector(7 downto 0);
--- output trigger to Hybrids (temporary, for tests)
-trigger_out           : out std_logic
+-- output fast signals to phy_block
+fast_signal           : out cmd_fastbus
 );
 end component;
 
@@ -67,15 +67,14 @@ constant ctrl_fastblock_init0   : ctrl_fastblock := (cmd_strobe => '0',
                                                      load_config => '0',
                                                      start_trigger => '0',
                                                      stop_trigger => '0',
-                                                     fast_signal_reset => '0',
-                                                     fast_signal_test_pulse => '0',
-                                                     fast_signal_trigger => '0',
-                                                     fast_signal_orbit_reset => '0');
+                                                     ipb_fast_reset => '0',
+                                                     ipb_test_pulse => '0',
+                                                     ipb_trigger => '0',
+                                                     ipb_orbit_reset => '0');
 
 signal clk_40MHz : std_logic;
 signal clk_lhc : std_logic;
-signal NUM_HYBRIDS : integer := 1;
-signal in_stubs : std_logic_vector(NUM_HYBRIDS downto 1) := "0";
+signal in_stubs : std_logic_vector(NUM_HYBRIDS downto 1) := "00";
 signal cnfg_fastblock_i : cnfg_fastblock;
 signal ctrl_fastblock_i : ctrl_fastblock := ctrl_fastblock_init0;
 

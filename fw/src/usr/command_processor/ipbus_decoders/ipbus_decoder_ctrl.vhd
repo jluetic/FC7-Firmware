@@ -23,7 +23,8 @@ use work.ipbus.all;
 entity ipbus_decoder_ctrl is
 generic( ADDR_WIDTH     : natural := 8 );
 port (
-        clk                   : in  std_logic;
+        clk_ipb               : in  std_logic;
+        clk_40MHz             : in std_logic;
         reset                 : in  std_logic;
         ipb_mosi_i            : in  ipb_wbus;
         ipb_miso_o            : out ipb_rbus;
@@ -56,10 +57,12 @@ architecture rtl of ipbus_decoder_ctrl is
                                                          load_config => '0',
                                                          start_trigger => '0',
                                                          stop_trigger => '0',
-                                                         fast_signal_reset => '0',
-                                                         fast_signal_test_pulse => '0',
-                                                         fast_signal_trigger => '0',
-                                                         fast_signal_orbit_reset => '0');
+                                                         ipb_fast_reset => '0',
+                                                         ipb_test_pulse => '0',
+                                                         ipb_trigger => '0',
+                                                         ipb_orbit_reset => '0');
+                                                         
+    signal ctrl_fastblock_int       : ctrl_fastblock;
     
     signal command_fifo_we_int      : std_logic := '0';
     signal command_fifo_data_int    : std_logic_vector(31 downto 0) := (others => '0');
@@ -99,7 +102,7 @@ begin
 	--=============================-- 
 
 	--=============================--
-	process(reset, clk)
+	process(reset, clk_ipb)
 	--=============================--
 	begin
 	if reset='1' then
@@ -109,16 +112,16 @@ begin
 		reset_needed <= '0';
 		ipb_global_reset <= '0';
 		
-		ctrl_fastblock_o <= ctrl_fastblock_init0;
+		ctrl_fastblock_int <= ctrl_fastblock_init0;
 		
 		command_fifo_we_int <= '0';
 		command_fifo_data_int <= (others => '0');
 		reply_fifo_read_next_o <= '0';
 		
-	elsif rising_edge(clk) then
+	elsif rising_edge(clk_ipb) then
 	    regs <= (others=> (others=>'0'));
 	    ipb_global_reset <= '0';
-	    ctrl_fastblock_o <= ctrl_fastblock_init0;
+	    ctrl_fastblock_int <= ctrl_fastblock_init0;
         i2c_reset <= '0';
         i2c_reset_fifos <= '0';
         command_fifo_we_int <= '0';
@@ -138,15 +141,15 @@ begin
             if sel = GLOBAL_SEL then
                 reset_needed <= ipb_mosi_i.ipb_wdata(GLOBAL_RESET_BIT); 
             elsif sel = SCG_SEL then
-                ctrl_fastblock_o.cmd_strobe <= '1';
-                ctrl_fastblock_o.reset <= ipb_mosi_i.ipb_wdata(SCG_RESET_BIT);
-                ctrl_fastblock_o.start_trigger <= ipb_mosi_i.ipb_wdata(SCG_START_TRIGGER_BIT); 
-                ctrl_fastblock_o.stop_trigger <= ipb_mosi_i.ipb_wdata(SCG_STOP_TRIGGER_BIT);  
-                ctrl_fastblock_o.load_config <= ipb_mosi_i.ipb_wdata(SCG_LOAD_CONFIG_BIT);
-                ctrl_fastblock_o.fast_signal_reset <= ipb_mosi_i.ipb_wdata(SCG_CFS_FAST_RESET_BIT); 
-                ctrl_fastblock_o.fast_signal_test_pulse <= ipb_mosi_i.ipb_wdata(SCG_CFS_TEST_PULSE_REQ_BIT); 
-                ctrl_fastblock_o.fast_signal_trigger <= ipb_mosi_i.ipb_wdata(SCG_CFS_TRIGGER_BIT); 
-                ctrl_fastblock_o.fast_signal_orbit_reset <= ipb_mosi_i.ipb_wdata(SCG_CFS_ORBIT_RESET_BIT);
+                ctrl_fastblock_int.cmd_strobe <= '1';
+                ctrl_fastblock_int.reset <= ipb_mosi_i.ipb_wdata(SCG_RESET_BIT);
+                ctrl_fastblock_int.start_trigger <= ipb_mosi_i.ipb_wdata(SCG_START_TRIGGER_BIT); 
+                ctrl_fastblock_int.stop_trigger <= ipb_mosi_i.ipb_wdata(SCG_STOP_TRIGGER_BIT);  
+                ctrl_fastblock_int.load_config <= ipb_mosi_i.ipb_wdata(SCG_LOAD_CONFIG_BIT);
+                ctrl_fastblock_int.ipb_fast_reset <= ipb_mosi_i.ipb_wdata(SCG_CFS_FAST_RESET_BIT); 
+                ctrl_fastblock_int.ipb_test_pulse <= ipb_mosi_i.ipb_wdata(SCG_CFS_TEST_PULSE_REQ_BIT); 
+                ctrl_fastblock_int.ipb_trigger <= ipb_mosi_i.ipb_wdata(SCG_CFS_TRIGGER_BIT); 
+                ctrl_fastblock_int.ipb_orbit_reset <= ipb_mosi_i.ipb_wdata(SCG_CFS_ORBIT_RESET_BIT);
             elsif sel = I2C_CONTROL_SEL then
                 i2c_reset <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_BIT);
                 i2c_reset_fifos <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_FIFOS_BIT);  
@@ -174,5 +177,18 @@ begin
 	ipb_miso_o.ipb_err <= '0';
 	command_fifo_we_o <= command_fifo_we_int;
 	command_fifo_data_o <= command_fifo_data_int;
+	
+	--=============================--
+	-- Clock synchronization
+	--=============================--
+    process(reset, clk_40MHz)
+    --=============================--
+    begin
+    if reset='1' then
+        ctrl_fastblock_o <= ctrl_fastblock_init0;
+    elsif rising_edge(clk_40MHz) then
+        ctrl_fastblock_o <= ctrl_fastblock_int; 
+    end if;
+    end process;
 
 end rtl;

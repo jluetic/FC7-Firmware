@@ -67,8 +67,6 @@ package user_package is
       test_pulse_trigger    : std_logic;
       -- orbit reset bit
       orbit_reset           : std_logic;
-      -- external pulse request (for electrical implementation)
-      external_pulse_request : std_logic; 
     end record;
    
     -- Config Bus From Command Processor to Fast Command Block
@@ -95,10 +93,10 @@ package user_package is
       start_trigger         : std_logic;
       stop_trigger          : std_logic;
       -- fast signals
-      fast_signal_reset             : std_logic;
-      fast_signal_test_pulse        : std_logic;
-      fast_signal_trigger           : std_logic;
-      fast_signal_orbit_reset       : std_logic;
+      ipb_fast_reset        : std_logic;
+      ipb_test_pulse        : std_logic;
+      ipb_trigger           : std_logic;
+      ipb_orbit_reset       : std_logic;
     end record;
     
     type fifo_stat is

@@ -86,7 +86,8 @@ begin
      --===================================--
      port map
      (   
-        clk                   => ipb_clk,
+        clk_ipb               => ipb_clk,
+        clk_40MHz             => clk_40MHz,
         reset                 => reset,
         ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_ctrl_sel),
         ipb_miso_o            => ipb_miso_o(ipb_daq_system_ctrl_sel),

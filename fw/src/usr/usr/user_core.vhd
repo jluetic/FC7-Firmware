@@ -175,8 +175,8 @@ architecture usr of user_core is
     --===================================--
     -- Fast Command Block Signals
     --===================================--
-    -- Trigger Signal from Fast Command Block
-    signal trigger_out              : std_logic;    
+    -- Trigger Fast Signals from Fast Command Block
+    signal fast_signal_to_phy       : cmd_fastbus;    
     -- Stubs From Hybrids
     signal hybrid_stubs             : std_logic_vector(NUM_HYBRIDS downto 1);
     signal fast_block_status_fsm    : std_logic_vector(7 downto 0);
@@ -303,8 +303,8 @@ begin
         trigger_status_out      => fast_block_status_fsm,
         -- fast command block error
         error_code              => fast_block_error,
-        -- output trigger to Hybrids
-        trigger_out             => trigger_out
+        -- output fast signals to phy_block
+        fast_signal             => fast_signal_to_phy
     );        
     --===================================-- 
     

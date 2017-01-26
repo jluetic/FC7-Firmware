@@ -52,6 +52,14 @@ def SendCommand_CTRL(name = "none"):
 	fc7.write("ctrl_i2c_reset", 1)
     elif name == "reset_i2c_fifos":
 	fc7.write("ctrl_i2c_reset_fifos", 1)
+    elif name == "fast_orbit_reset":
+	fc7.write("ctrl_fast_signal_orbit_reset", 1)
+    elif name == "fast_fast_reset":
+	fc7.write("ctrl_fast_signal_fast_reset", 1)
+    elif name == "fast_trigger":
+	fc7.write("ctrl_fast_signal_trigger", 1)
+    elif name == "fast_test_pulse":
+	fc7.write("ctrl_fast_signal_test_pulse", 1)
     else:
         print "Unknown Command"
 
@@ -189,6 +197,16 @@ def I2CTester():
 SendCommand_CTRL("global_reset")
 sleep(0.5)
 
-FastTester()
+# to test I2C Commands (see method definition)
 #I2CTester()
+
+# to test Fast Command Block 
+FastTester()
+
+# set of commands one may need but not used in FastTester
+#SendCommand_CTRL("fast_orbit_reset")
+#SendCommand_CTRL("fast_trigger")
+#SendCommand_CTRL("fast_fast_reset")
+#SendCommand_CTRL("fast_test_pulse")
+
 CheckClockFrequencies()

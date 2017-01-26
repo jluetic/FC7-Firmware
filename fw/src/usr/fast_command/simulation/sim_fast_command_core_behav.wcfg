@@ -5,18 +5,21 @@
    <db_ref_list>
       <db_ref path="sim_fast_command_core_behav.wdb" id="1">
          <top_modules>
-            <top_module name="glbl" />
             <top_module name="sim_fast_command_core" />
             <top_module name="user_package" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="3315000001fs"></ZoomEndTime>
-      <Cursor1Time time="1050000000fs"></Cursor1Time>
+      <ZoomStartTime time="21242487000fs"></ZoomStartTime>
+      <ZoomEndTime time="22560487001fs"></ZoomEndTime>
+      <Cursor1Time time="22248487000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="16" />
+   <column_width_setting>
+      <NameColumnWidth column_width="175"></NameColumnWidth>
+      <ValueColumnWidth column_width="148"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="17" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
@@ -30,8 +33,8 @@
       <obj_property name="ObjectShortName">user_trigger</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/in_stubs">
-      <obj_property name="ElementShortName">in_stubs[1:1]</obj_property>
-      <obj_property name="ObjectShortName">in_stubs[1:1]</obj_property>
+      <obj_property name="ElementShortName">in_stubs[2:1]</obj_property>
+      <obj_property name="ObjectShortName">in_stubs[2:1]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/counter">
       <obj_property name="ElementShortName">counter[31:0]</obj_property>
@@ -66,9 +69,9 @@
       <obj_property name="ElementShortName">trigger_i</obj_property>
       <obj_property name="ObjectShortName">trigger_i</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/trigger_out">
-      <obj_property name="ElementShortName">trigger_out</obj_property>
-      <obj_property name="ObjectShortName">trigger_out</obj_property>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/trigger_o">
+      <obj_property name="ElementShortName">trigger_o</obj_property>
+      <obj_property name="ObjectShortName">trigger_o</obj_property>
    </wvobject>
    <wvobject type="other" fp_name="/sim_fast_command_core/UUT/trigger_state">
       <obj_property name="ElementShortName">trigger_state</obj_property>
@@ -81,7 +84,6 @@
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/ctrl_fastblock_i">
       <obj_property name="ElementShortName">ctrl_fastblock_i</obj_property>
       <obj_property name="ObjectShortName">ctrl_fastblock_i</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_checker">
       <obj_property name="ElementShortName">trigger_checker[31:0]</obj_property>
@@ -94,6 +96,10 @@
    <wvobject type="array" fp_name="/sim_fast_command_core/UUT/cnfg_fastblock_i">
       <obj_property name="ElementShortName">cnfg_fastblock_i</obj_property>
       <obj_property name="ObjectShortName">cnfg_fastblock_i</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/fast_signal">
+      <obj_property name="ElementShortName">fast_signal</obj_property>
+      <obj_property name="ObjectShortName">fast_signal</obj_property>
       <obj_property name="isExpanded"></obj_property>
    </wvobject>
 </wave_config>
