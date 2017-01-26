@@ -21,10 +21,6 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity command_processor_core is
-  Generic (
-    NUM_HYBRIDS     : integer range 1 to 32 := 1;
-    NUM_CHIPS       : integer range 1 to 16 := 1
-  );
   Port ( 
     clk_40MHz       : in std_logic;
     ipb_clk         : in std_logic;

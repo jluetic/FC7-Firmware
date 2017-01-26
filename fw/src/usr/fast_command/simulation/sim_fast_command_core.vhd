@@ -40,9 +40,6 @@ end sim_fast_command_core;
 architecture Behavioral of sim_fast_command_core is
 
 component fast_command_core
-Generic (
-  NUM_HYBRIDS           : integer := 1
-);
 Port (
 clk_40MHz             : in std_logic;
 l1_trigger_in         : in std_logic;
@@ -95,8 +92,7 @@ begin
     cnfg_fastblock_i.divider            <= 10;
     cnfg_fastblock_i.stubs_mask         <= x"00000003";
 
-    UUT: fast_command_core generic map (NUM_HYBRIDS)
-    port map(clk_40MHz, clk_lhc, '0', ctrl_fastblock_i, cnfg_fastblock_i, in_stubs, open, open, open);
+    UUT: fast_command_core port map(clk_40MHz, clk_lhc, '0', ctrl_fastblock_i, cnfg_fastblock_i, in_stubs, open, open, open);
     
     clk40_process: process
     begin

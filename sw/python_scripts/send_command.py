@@ -39,20 +39,19 @@ def SendCommand_CTRL(name = "none"):
     if name == "none":
         print "Sending nothing"
     elif name == "global_reset":
-	fc7.write("ctrl_global", fc7AddrTable.getItem("ctrl_global_reset").shiftDataToMask(1))
-	#fc7.write("ctrl_global", 16)
+	fc7.write("ctrl_global_reset", 1)
     elif name == "reset_trigger":
-	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_reset").shiftDataToMask(1))
+	fc7.write("ctrl_fast_reset", 1)
     elif name == "start_trigger":
-	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_start").shiftDataToMask(1))
+	fc7.write("ctrl_fast_start", 1)
     elif name == "stop_trigger":
-	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_stop").shiftDataToMask(1))
+	fc7.write("ctrl_fast_stop", 1)
     elif name == "load_config":
-	fc7.write("ctrl_fast", fc7AddrTable.getItem("ctrl_fast_load_config").shiftDataToMask(1))
+	fc7.write("ctrl_fast_load_config", 1)
     elif name == "reset_i2c":
-	fc7.write("ctrl_i2c", fc7AddrTable.getItem("ctrl_i2c_reset").shiftDataToMask(1))
+	fc7.write("ctrl_i2c_reset", 1)
     elif name == "reset_i2c_fifos":
-	fc7.write("ctrl_i2c", fc7AddrTable.getItem("ctrl_i2c_reset_fifos").shiftDataToMask(1))
+	fc7.write("ctrl_i2c_reset_fifos", 1)
     else:
         print "Unknown Command"
 
@@ -134,10 +133,14 @@ def FastTester():
 	################
 	## fast config #
 	################
+	# trigger_source: 1 - L1, 2 - Stubs Coincidence, 3 - User Frequency
 	trigger_source = 3
+	# triggers_to_accept: 0 - continious triggering, otherwise sends neeeded amount and turns off
 	triggers_to_accept = 0
+	# trigger_divider: divide 40MHz by <number>; if 0,1 - 40MHz
 	trigger_divider = 2
-	trigger_stubs_mask = 3
+	# trigger_stubs_mask: can set a stubs coincidence, 5 means that stubs from hybrids id=2 and id=0 are required: 1b'101
+	trigger_stubs_mask = 5
 	################
 	
 	ReadStatus("Before Configuration")
@@ -155,9 +158,11 @@ def I2CTester():
 	###############
 	## i2c config #
 	###############
+	# command_i2c: 0 - send command to certain hybrid/chip, 1 - send command to all chips on hybrid, 2 - send command to all chips on all hybrids
 	command_i2c = 1
 	hybrid_id = 0
-	chip_id = 2
+	chip_id = 4
+	# mask has to be configured with Configure_I2C(--mask--) command, then used or not used using the paramter below
 	use_mask = 0
 	page = 1
 	# 0 - write, 1 - read
@@ -170,9 +175,9 @@ def I2CTester():
 	Configure_I2C(255)
 	ReadStatus("After I2C Configuration")
 
-	#for i in range (0,6):
-		#SendCommand_I2C(0, hybrid_id, chip_id, use_mask, page, read, register, data)
 	SendCommand_I2C(command_i2c, hybrid_id, chip_id, use_mask, page, read, register, data)
+	
+	sleep(1)
 
 	ReadStatus("After Send Command")
 	ReadChipData()
@@ -181,6 +186,9 @@ def I2CTester():
 ####################
 ## Program Running #
 ####################
-#FastTester()
-I2CTester()
+SendCommand_CTRL("global_reset")
+sleep(0.5)
+
+FastTester()
+#I2CTester()
 CheckClockFrequencies()

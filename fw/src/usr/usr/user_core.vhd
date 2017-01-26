@@ -145,13 +145,6 @@ port
 end user_core;
 
 architecture usr of user_core is
-
-    --===================================--
-    -- Constant definition
-    --===================================--
-    constant NUM_HYBRIDS            : integer := 2;
-    constant NUM_CHIPS              : integer := 8;
-    --===================================--
     
     --===================================--
     -- Signal definition
@@ -259,11 +252,6 @@ begin
     --===================================--
     command_processor_block: entity work.command_processor_core
     --===================================--
-    generic map
-        (
-            NUM_HYBRIDS => NUM_HYBRIDS,
-            NUM_CHIPS   => NUM_CHIPS
-        )
     port map
     (
         clk_40MHz       => clk_40MHz,
@@ -301,10 +289,6 @@ begin
     --===================================--
     fast_command_block: entity work.fast_command_core
     --===================================--
-    generic map
-    (
-        NUM_HYBRIDS => NUM_HYBRIDS
-    )
     port map
     (
         clk_40Mhz               => clk_40MHz,

@@ -41,10 +41,6 @@ end sim_command_processor_core;
 architecture Behavioral of sim_command_processor_core is
 
 component command_processor_core
-  Generic (
-  NUM_HYBRIDS     : integer range 1 to 32 := 1;
-  NUM_CHIPS       : integer range 1 to 16 := 1
-);
 Port ( 
     clk_40MHz       : in std_logic;
     ipb_clk         : in std_logic;
@@ -148,15 +144,10 @@ begin
     command_fast_stop <= x"00000004";
     command_fast_load_config <= x"00000008";    
 
-    UUT: command_processor_core generic map (2,8)
-    port map(clk_40MHz, clk_ipb, reset or ipb_reset, ipb_mosi_i, ipb_miso_o, ipb_reset, fast_block_ctrl, fast_block_cnfg, i2c_request, i2c_reply, fast_block_status_fsm, test_clock_frequency, fast_block_error);
+    UUT: command_processor_core port map(clk_40MHz, clk_ipb, reset or ipb_reset, ipb_mosi_i, ipb_miso_o, ipb_reset, fast_block_ctrl, fast_block_cnfg, i2c_request, i2c_reply, fast_block_status_fsm, test_clock_frequency, fast_block_error);
     
     fast_command_block: entity work.fast_command_core
         --===================================--
-        generic map
-        (
-            NUM_HYBRIDS => 2
-        )
         port map
         (
             clk_40Mhz               => clk_40MHz,

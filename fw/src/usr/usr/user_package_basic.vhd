@@ -12,6 +12,8 @@ package user_package is
     constant ipb_daq_system_ctrl_sel: integer  := 1;
     constant ipb_daq_system_stat_sel: integer  := 2;
     
+    constant NUM_HYBRIDS            : integer := 2;
+    constant NUM_CHIPS              : integer := 8;    
 	
 	constant MAX_NTRIGGERS_TO_ACCEPT : integer := 1_000_000;
     constant CLK_40MHZ_NCOUNTS        : integer := 40_000_000;

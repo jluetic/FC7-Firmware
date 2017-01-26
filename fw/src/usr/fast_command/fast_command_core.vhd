@@ -19,9 +19,6 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 entity fast_command_core is
-  Generic (
-    NUM_HYBRIDS           : integer := 1
-  );
   Port (
     clk_40MHz             : in std_logic;
     l1_trigger_in         : in std_logic;
