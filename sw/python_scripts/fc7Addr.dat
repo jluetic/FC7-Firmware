@@ -3,7 +3,7 @@ user_ipb_stat_regs		40000000    ffffffff     1     1
 
 ipb_daq_system_cnfg		40000100    ffffffff     1     1
    cnfg_fast_triggers_to_accept 40000123    ffffffff	 1     1
-   cnfg_fast_divider            40000124    ffffffff	 1     1
+   cnfg_fast_user_frequency     40000124    ffffffff	 1     1
    cnfg_fast_source_full	40000128    ffffffff	 1     1	
    cnfg_fast_source             40000128    0000000f	 1     1
    cnfg_fast_mask               40000129    ffffffff	 1     1
@@ -55,4 +55,4 @@ ipb_daq_system_stat		40000300    ffffffff     1     0
    stat_i2c_fifo_replies_full	40000351    00000002     1     0
    stat_rate_ipb		40000340    ffffffff     1     0
    stat_rate_40mhz	        40000341    ffffffff	 1     0
-
+   stat_rate_user		40000342    ffffffff     1     0

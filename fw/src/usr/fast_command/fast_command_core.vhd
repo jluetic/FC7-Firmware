@@ -32,6 +32,8 @@ entity fast_command_core is
     trigger_status_out    : out std_logic_vector(7 downto 0);
     -- fast command block error
     error_code            : out std_logic_vector(7 downto 0);
+    -- used to measure the frequency
+    user_trigger_out      : out std_logic;
     -- output fast signals to phy_block
     fast_signal           : out cmd_fastbus
   );
@@ -63,13 +65,13 @@ architecture rtl of fast_command_core is
     -- trigger configs
     signal trigger_source           : std_logic_vector(3 downto 0) := x"1";    
     signal hybrid_mask_inv          : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
-    signal user_trigger_divider     : integer range 1 to MAX_TRIGGER_DIVIDER := 1;    
+    signal user_trigger_frequency   : integer range 1 to MAX_USER_TRIGGER_FREQUENCY := 1;    
     signal triggers_to_accept       : integer range 0 to MAX_NTRIGGERS_TO_ACCEPT := 0;
     
     -- temporary configuration signals
     signal temp_trigger_source           : std_logic_vector(3 downto 0) := x"1";
     signal temp_hybrid_mask_inv          : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
-    signal temp_user_trigger_divider     : integer range 1 to MAX_TRIGGER_DIVIDER := 1;    
+    signal temp_user_trigger_frequency   : integer range 1 to MAX_USER_TRIGGER_FREQUENCY := 1;    
     signal temp_triggers_to_accept       : integer range 0 to MAX_NTRIGGERS_TO_ACCEPT := 0;
     
     -- accept N triggers related signals
@@ -93,6 +95,8 @@ begin
 
     stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
     
+    user_trigger_out <= user_trigger;
+    
     -- status
     trigger_status_out(7 downto 6) <= "00";
     trigger_status_out(5)          <= configured;
@@ -106,7 +110,7 @@ port map
 (
     i_clk           => clk_40MHz,
     i_rst           => reset_int,
-    i_clk_divider   => std_logic_vector(to_unsigned(user_trigger_divider,32)),
+    i_clk_frequency => user_trigger_frequency,
     o_clk           => user_trigger
 );             
 --===================================--
@@ -189,7 +193,7 @@ begin
         
         temp_trigger_source <= x"1";
         temp_hybrid_mask_inv <= (others => '1');
-        temp_user_trigger_divider <= 1;
+        temp_user_trigger_frequency <= 1;
         temp_triggers_to_accept <= 0;
         configured <= '0';
         
@@ -200,7 +204,7 @@ begin
         if trigger_state = Idle then            
             trigger_source <= temp_trigger_source;
             hybrid_mask_inv <= temp_hybrid_mask_inv;
-            user_trigger_divider <= temp_user_trigger_divider;
+            user_trigger_frequency <= temp_user_trigger_frequency;
             triggers_to_accept <= temp_triggers_to_accept;
         end if;
         if ctrl_fastblock_i.cmd_strobe = '1' then
@@ -212,7 +216,7 @@ begin
                 end if;
                 temp_trigger_source <= cnfg_fastblock_i.trigger_source;
                 temp_hybrid_mask_inv <= not cnfg_fastblock_i.stubs_mask(NUM_HYBRIDS-1 downto 0);
-                temp_user_trigger_divider <= cnfg_fastblock_i.divider;
+                temp_user_trigger_frequency <= cnfg_fastblock_i.user_trigger_frequency;
                 temp_triggers_to_accept <= cnfg_fastblock_i.triggers_to_accept;
                 configured <= '1';
             elsif ctrl_fastblock_i.start_trigger = '1' then
@@ -243,7 +247,7 @@ begin
         if checked = '0' then            
             if trigger_state = Running then                
                 -- if no trigger for MAX_TIME_WITHOUT_TRIGGER seconds => bye bye
-                if TO_INTEGER(unsigned(trigger_checker)) >= MAX_TIME_WITHOUT_TRIGGER*CLK_40MHZ_NCOUNTS then
+                if TO_INTEGER(unsigned(trigger_checker)) >= MAX_TIME_WITHOUT_TRIGGER*CLK_FREQUENCY_HZ then
                     if counter = x"00000000" then
                         no_triggers <= '1';
                     else

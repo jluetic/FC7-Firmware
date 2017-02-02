@@ -61,7 +61,7 @@ architecture rtl of ipbus_decoder_stat is
    
    constant TEST_CLOCK_IPB                       : integer := 16#40#;
    constant TEST_CLOCK_40MHZ                     : integer := 16#41#;
-      
+   constant TEST_CLOCK_USER                      : integer := 16#42#;      
 begin
 
 	--=============================--
@@ -101,6 +101,7 @@ begin
     
     regs(TEST_CLOCK_IPB) <= test_clock_frequency(0);
     regs(TEST_CLOCK_40MHZ) <= test_clock_frequency(1);
+    regs(TEST_CLOCK_USER) <= test_clock_frequency(2);
     	
 ERROR_HANDLER: process(reset, clk)
 begin

@@ -64,9 +64,9 @@ def SendCommand_CTRL(name = "none"):
         print "Unknown Command"
 
 # Configure Fast Block
-def Configure_Fast(triggers_to_accept, divider, source, stubs_mask):
+def Configure_Fast(triggers_to_accept, user_frequency, source, stubs_mask):
   fc7.write("cnfg_fast_triggers_to_accept", triggers_to_accept)
-  fc7.write("cnfg_fast_divider", divider)
+  fc7.write("cnfg_fast_user_frequency", user_frequency)
   ready_source = fc7AddrTable.getItem("cnfg_fast_source").shiftDataToMask(source)
   fc7.write("cnfg_fast_source_full", ready_source)
   fc7.write("cnfg_fast_mask", stubs_mask)
@@ -115,6 +115,7 @@ def ReadStatus(name = "Current Status"):
 def CheckClockFrequencies():
   print "IPBus Clock Rate: ", fc7.read("stat_rate_ipb")/10000.0, "MHz"
   print "40MHz Clock Rate: ", fc7.read("stat_rate_40mhz")/10000.0, "MHz"
+  print "User Clock Rate: ", fc7.read("stat_rate_user")/10.0, "KHz"
 
 def DataFromMask(data, mask_name):
   return fc7AddrTable.getItem(mask_name).shiftDataFromMask(data)
@@ -145,14 +146,14 @@ def FastTester():
 	trigger_source = 3
 	# triggers_to_accept: 0 - continious triggering, otherwise sends neeeded amount and turns off
 	triggers_to_accept = 0
-	# trigger_divider: divide 40MHz by <number>; if 0,1 - 40MHz
-	trigger_divider = 2
+	# trigger_user_frequency: in kHz 1 to 1000.
+	trigger_user_frequency = 3
 	# trigger_stubs_mask: can set a stubs coincidence, 5 means that stubs from hybrids id=2 and id=0 are required: 1b'101
 	trigger_stubs_mask = 5
 	################
 	
 	ReadStatus("Before Configuration")
-	Configure_Fast(triggers_to_accept, trigger_divider, trigger_source, trigger_stubs_mask)
+	Configure_Fast(triggers_to_accept, trigger_user_frequency, trigger_source, trigger_stubs_mask)
 	ReadStatus("Configured")
 	SendCommand_CTRL("start_trigger")
 	ReadStatus("Trigger Started")

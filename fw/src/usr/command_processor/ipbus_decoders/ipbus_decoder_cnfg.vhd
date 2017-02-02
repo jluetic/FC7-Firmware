@@ -46,7 +46,7 @@ architecture rtl of ipbus_decoder_cnfg is
 
     -- fast command block commands    
     constant SCG_FSG_NCYCLE_SEL                       : integer := 16#23#;
-    constant SCG_FSG_CYCLE_PERIOD_SEL                 : integer := 16#24#;
+    constant SCG_FSG_CYCLE_FREQUENCY_SEL              : integer := 16#24#;
     constant SCG_FSG_SOURCE_SEL                       : integer := 16#28#;
     constant SCG_FSG_SOURCE_OFFSET                    : integer := 0;
     constant SCG_FSG_SOURCE_WIDTH                     : integer := 4;
@@ -73,7 +73,7 @@ begin
 		ipb_ack_int 	 <= '0';
 		
 		regs(SCG_FSG_NCYCLE_SEL) <= (others => '0');
-		regs(SCG_FSG_CYCLE_PERIOD_SEL) <= x"00000001";
+		regs(SCG_FSG_CYCLE_FREQUENCY_SEL) <= x"00000001";
 		regs(SCG_FSG_SOURCE_SEL)(SCG_FSG_SOURCE_OFFSET + SCG_FSG_SOURCE_WIDTH -1 downto SCG_FSG_SOURCE_OFFSET) <= x"1";
 		regs(SCG_FSG_MASK_SEL) <= (others => '0');
 		
@@ -104,7 +104,7 @@ begin
 	-- trigger config
 	cnfg_fastblock_o.trigger_source <= regs(SCG_FSG_SOURCE_SEL)(SCG_FSG_SOURCE_OFFSET + SCG_FSG_SOURCE_WIDTH -1 downto SCG_FSG_SOURCE_OFFSET);
 	cnfg_fastblock_o.triggers_to_accept <= to_integer(unsigned(regs(SCG_FSG_NCYCLE_SEL)));
-	cnfg_fastblock_o.divider <= to_integer(unsigned(regs(SCG_FSG_CYCLE_PERIOD_SEL)));
+	cnfg_fastblock_o.user_trigger_frequency <= to_integer(unsigned(regs(SCG_FSG_CYCLE_FREQUENCY_SEL)));
 	cnfg_fastblock_o.stubs_mask <= regs(SCG_FSG_MASK_SEL);
 	
 	i2c_mask <= regs(I2C_WRITE_MASK_SEL)(I2C_WRITE_MASK_OFFSET + I2C_WRITE_MASK_WIDTH -1 downto I2C_WRITE_MASK_OFFSET);

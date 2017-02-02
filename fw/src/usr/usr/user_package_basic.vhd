@@ -15,11 +15,12 @@ package user_package is
     constant NUM_HYBRIDS            : integer := 2;
     constant NUM_CHIPS              : integer := 8;    
 	
-	constant MAX_NTRIGGERS_TO_ACCEPT : integer := 1_000_000;
-    constant CLK_40MHZ_NCOUNTS        : integer := 40_000_000;
-	constant MAX_TRIGGER_DIVIDER     : integer := 10*CLK_40MHZ_NCOUNTS;
+	constant MAX_NTRIGGERS_TO_ACCEPT    : integer := 1_000_000;
+    constant CLK_FREQUENCY_HZ           : integer := 40_000_000;
+    -- maximal trigger frequency in khz
+	constant MAX_USER_TRIGGER_FREQUENCY    : integer := 1000;
 	-- when checking trigger, maximal amount of time without trigger, seconds
-	constant MAX_TIME_WITHOUT_TRIGGER: integer := 1;
+	constant MAX_TIME_WITHOUT_TRIGGER      : integer := 1;
 	
 
 	type array_8x8bit  is array  (0 to  7) of std_logic_vector(7 downto 0);
@@ -77,7 +78,7 @@ package user_package is
       -- number of triggers to accept
       triggers_to_accept    : integer range 0 to MAX_NTRIGGERS_TO_ACCEPT;
       -- trigger frequency divider, minimal frequency is 0.1Hz
-      divider               : integer range 1 to MAX_TRIGGER_DIVIDER;
+      user_trigger_frequency: integer range 1 to MAX_USER_TRIGGER_FREQUENCY;
       -- stubs mask to get coincidence
       stubs_mask            : std_logic_vector(31 downto 0);
     end record;    

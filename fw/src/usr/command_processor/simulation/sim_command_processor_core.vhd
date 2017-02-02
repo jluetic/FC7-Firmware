@@ -195,6 +195,7 @@ begin
             trigger_status_out      => fast_block_status_fsm,
             -- fast command block error
             error_code              => fast_block_error,
+            user_trigger_out        => open,
             -- output fast signals to phy_block
             fast_signal             => open
         );        
@@ -251,7 +252,7 @@ begin
         wait for 100 ns;
         
         --=======================--
-        -- config trigger source to User-Defined Frequency (will be 40 MHz now)
+        -- config trigger source to User-Defined Frequency (will be 1 kHz now)
         -- see fc7Addr.dat in python scripts to understand the values
         --=======================--
         
@@ -282,7 +283,7 @@ begin
             ipb_strobe <= '1';
             wait for 32 ns;
             ipb_strobe <= '0';
-        wait for 1000 ns;
+        wait for 10000 ns;
         
         ipb_wdata <= fast_command(stop);
             wait for 32 ns;

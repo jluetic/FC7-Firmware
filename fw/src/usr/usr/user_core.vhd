@@ -155,7 +155,8 @@ architecture usr of user_core is
     signal clk_160Mhz               : std_logic;
     signal clk_40Mhz                : std_logic;
     signal clk_40Mhz_nobuf          : std_logic;
-    signal clk_320Mhz               : std_logic;    
+    signal clk_320Mhz               : std_logic;
+    signal clk_user                 : std_logic;    
     -- IPBus Clock
     signal ipb_clk					: std_logic;
     
@@ -303,6 +304,8 @@ begin
         trigger_status_out      => fast_block_status_fsm,
         -- fast command block error
         error_code              => fast_block_error,
+        -- used to measure the frequency
+        user_trigger_out        => clk_user,
         -- output fast signals to phy_block
         fast_signal             => fast_signal_to_phy
     );        
@@ -374,5 +377,17 @@ begin
         clkvalue => ipb_clk,
         value    => test_clock_frequency(1)
     );
+    
+    clkRate2 : clkRateTool32
+        GENERIC MAP (
+           -- clock rate of clkref in MHz
+            CLKREF_RATE_IN_MHZ => 125
+        )  
+        PORT MAP (
+            clkref   => osc125_a_mgtrefclk_i,
+            clktest  => clk_user,
+            clkvalue => ipb_clk,
+            value    => test_clock_frequency(2)
+        );
 
 end usr;

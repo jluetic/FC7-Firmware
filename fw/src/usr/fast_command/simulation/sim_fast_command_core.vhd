@@ -53,6 +53,7 @@ in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
 trigger_status_out    : out std_logic_vector(7 downto 0);
 -- fast command block error
 error_code            : out std_logic_vector(7 downto 0);
+user_trigger_out      : out std_logic;
 -- output fast signals to phy_block
 fast_signal           : out cmd_fastbus
 );
@@ -88,10 +89,10 @@ begin
 
     cnfg_fastblock_i.trigger_source     <= trigger_source;
     cnfg_fastblock_i.triggers_to_accept <= 0;
-    cnfg_fastblock_i.divider            <= 10;
+    cnfg_fastblock_i.user_trigger_frequency            <= 100;
     cnfg_fastblock_i.stubs_mask         <= x"00000003";
 
-    UUT: fast_command_core port map(clk_40MHz, clk_lhc, '0', ctrl_fastblock_i, cnfg_fastblock_i, in_stubs, open, open, open);
+    UUT: fast_command_core port map(clk_40MHz, clk_lhc, '0', ctrl_fastblock_i, cnfg_fastblock_i, in_stubs, open, open, open, open);
     
     clk40_process: process
     begin
