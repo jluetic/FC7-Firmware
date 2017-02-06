@@ -105,7 +105,8 @@ package user_package is
         i2c_commands_empty   : std_logic;
         i2c_commands_full    : std_logic; 
         i2c_replies_empty    : std_logic;       
-        i2c_replies_full     : std_logic;        
+        i2c_replies_full     : std_logic;
+        i2c_nreplies_present : std_logic_vector(15 downto 0);  
     end record;
     
 end user_package;

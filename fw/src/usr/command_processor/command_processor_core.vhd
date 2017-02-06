@@ -67,7 +67,8 @@ architecture rtl of command_processor_core is
     signal reply_fifo_data_in    : std_logic_vector(31 downto 0);
     signal reply_fifo_data_out   : std_logic_vector(31 downto 0); 
     
-    signal i2c_mask              : std_logic_vector(7 downto 0);   
+    signal i2c_mask              : std_logic_vector(7 downto 0);
+    signal i2c_request_int       : cmd_wbus;   
     
     --==========================--    
     -- statuses
@@ -78,6 +79,9 @@ architecture rtl of command_processor_core is
     --==========================--   
         
 begin
+
+    -- used for counter
+    i2c_request <= i2c_request_int;
         
      --===================================--
      -- IPBus Control Decoder
@@ -174,16 +178,17 @@ begin
    --===================================--
     port map
     (
-       rst            => reset or i2c_reset or i2c_reset_fifos,
-       wr_clk         => clk_40MHz,
-       rd_clk         => ipb_clk,
-       din            => reply_fifo_data_in,
-       wr_en          => reply_fifo_we,
-       rd_en          => reply_fifo_read_next,
-       dout           => reply_fifo_data_out,
-       full           => fifo_statuses.i2c_replies_full,
-       empty          => fifo_statuses.i2c_replies_empty
-   );
+       reset            => reset or i2c_reset or i2c_reset_fifos,
+       wr_clk           => clk_40MHz,
+       rd_clk           => ipb_clk,
+       reply_ready      => reply_fifo_we,
+       din_i            => reply_fifo_data_in,
+       read_next        => reply_fifo_read_next,
+       dout_o           => reply_fifo_data_out,
+       empty_o          => fifo_statuses.i2c_replies_empty,
+       full_o           => fifo_statuses.i2c_replies_full,
+       ndata_o          => fifo_statuses.i2c_nreplies_present
+   ); 
    --===================================--
    
     --===================================--
@@ -208,7 +213,7 @@ begin
        reply_fifo_data_o        => reply_fifo_data_in,
        i2c_fsm_status   => status_i2c_master_fsm,
        error_code       => error_i2c_master,
-       i2c_request      => i2c_request,
+       i2c_request      => i2c_request_int,
        i2c_reply        => i2c_reply
     );        
     --===================================--

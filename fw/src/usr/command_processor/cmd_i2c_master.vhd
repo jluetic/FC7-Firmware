@@ -68,9 +68,6 @@ architecture rtl of cmd_i2c_master is
     -- counters
     signal chip_counter           : integer range 0 to NUM_CHIPS := 0;
     signal hybrid_counter         : integer range 0 to NUM_HYBRIDS := 0;
-    
-    -- write counter, to ensure that fifo is written
-    signal write_counter          : std_logic_vector(1 downto 0) := "00";
         
 begin
 
@@ -130,7 +127,6 @@ begin
         when SendCommand =>
             i2c_fsm_status <= x"3";
  
-            write_counter <= "00";
             -- setting register value to a certain hybrid,chip
             if command_type = x"0" then
                     if(TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS) or (TO_INTEGER(unsigned(chip_id))+1>NUM_CHIPS) then
@@ -274,23 +270,14 @@ begin
         
         when WriteFifo =>
             i2c_fsm_status <= x"5";
-            if write_counter = "01" then
-                reply_fifo_we_o <= '0';            
-            elsif write_counter = "11" then
-                i2c_fsm_state <= SendCommand;   
-            end if;
-            write_counter <= write_counter + 1;
+            reply_fifo_we_o <= '0';            
+            i2c_fsm_state <= SendCommand;               
                                                 
         when Finished =>
             i2c_fsm_status <= x"6";
             command_fifo_read_next_o <= '0';
-                        
-            if write_counter = "01" then
-                reply_fifo_we_o <= '0';            
-            elsif write_counter = "11" then
-                i2c_fsm_state <= Idle;   
-            end if;
-            write_counter <= write_counter + 1;          
+            reply_fifo_we_o <= '0';            
+            i2c_fsm_state <= Idle;                     
             
         when others =>
             i2c_fsm_status <= x"f";

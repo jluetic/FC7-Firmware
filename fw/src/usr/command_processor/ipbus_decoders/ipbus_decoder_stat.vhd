@@ -58,6 +58,7 @@ architecture rtl of ipbus_decoder_stat is
    constant I2C_REPLIES_FIFO_STAT_SEL           : integer := 16#51#;
    constant I2C_REPLIES_FIFO_EMPTY_BIT          : integer := 0;
    constant I2C_REPLIES_FIFO_FULL_BIT           : integer := 1;
+   constant I2C_NREPLIES_SEL                    : integer := 16#52#;
    
    constant TEST_CLOCK_IPB                       : integer := 16#40#;
    constant TEST_CLOCK_40MHZ                     : integer := 16#41#;
@@ -98,6 +99,8 @@ begin
 	regs(I2C_COMMANDS_FIFO_STAT_SEL)(I2C_COMMANDS_FIFO_FULL_BIT) <= fifo_statuses.i2c_commands_full;
 	regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_EMPTY_BIT) <= fifo_statuses.i2c_replies_empty;
     regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_FULL_BIT) <= fifo_statuses.i2c_replies_full;
+    regs(I2C_NREPLIES_SEL)(15 downto 0) <= fifo_statuses.i2c_nreplies_present;
+    regs(I2C_NREPLIES_SEL)(31 downto 16) <= (others => '0');
     
     regs(TEST_CLOCK_IPB) <= test_clock_frequency(0);
     regs(TEST_CLOCK_40MHZ) <= test_clock_frequency(1);

@@ -116,7 +116,6 @@ begin
 		
 		command_fifo_we_int <= '0';
 		command_fifo_data_int <= (others => '0');
-		reply_fifo_read_next_o <= '0';
 		
 	elsif rising_edge(clk_ipb) then
 	    regs <= (others=> (others=>'0'));
@@ -125,7 +124,6 @@ begin
         i2c_reset <= '0';
         i2c_reset_fifos <= '0';
         command_fifo_we_int <= '0';
-        reply_fifo_read_next_o <= '0';
 
         -- one clock cycle delay before reset, otherwise computer will not receive the confirmation
         if reset_needed = '1' then
@@ -162,17 +160,18 @@ begin
         -- read section
         --=============================--
         
-        if sel = I2C_REPLY_FIFO_SEL and ipb_mosi_i.ipb_strobe = '1' then
-            reply_fifo_read_next_o <= '1'; 
-            ipb_miso_o.ipb_rdata <= reply_fifo_data_i;
-        else
-            ipb_miso_o.ipb_rdata <= regs(sel);            
-        end if;
-        ipb_ack_int <= ipb_mosi_i.ipb_strobe and not ipb_ack_int;
+--        if sel = I2C_REPLY_FIFO_SEL and ipb_mosi_i.ipb_strobe = '1' then            
+--            ipb_miso_o.ipb_rdata <= reply_fifo_data_i;
+--        else
+--            ipb_miso_o.ipb_rdata <= regs(sel);            
+--        end if;
+        ipb_ack_int <= ipb_mosi_i.ipb_strobe and not ipb_ack_int;        
         --=============================--
 	end if;
 	end process;
 	
+	ipb_miso_o.ipb_rdata <= reply_fifo_data_i when (sel = I2C_REPLY_FIFO_SEL and ipb_mosi_i.ipb_strobe = '1') else regs(sel);
+	reply_fifo_read_next_o <= ipb_ack_int when (ipb_mosi_i.ipb_write='0' and sel = I2C_REPLY_FIFO_SEL) else '0';	
 	ipb_miso_o.ipb_ack <= ipb_ack_int;
 	ipb_miso_o.ipb_err <= '0';
 	command_fifo_we_o <= command_fifo_we_int;

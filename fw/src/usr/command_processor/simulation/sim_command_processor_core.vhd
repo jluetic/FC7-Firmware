@@ -237,7 +237,7 @@ begin
             ipb_strobe <= '1';
             wait for 32 ns;
             ipb_strobe <= '0';        
-        wait for 500 ns;        
+        wait for 1500 ns;        
         
         --=======================--
         -- read i2c reply
@@ -249,7 +249,16 @@ begin
             ipb_strobe <= '1';
             wait for 32 ns;
             ipb_strobe <= '0';
+            wait for 64 ns;
+            ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '0';
+            wait for 64 ns;
+            ipb_strobe <= '1';
+            wait for 32 ns;
+            ipb_strobe <= '0';
         wait for 100 ns;
+        
         
         --=======================--
         -- config trigger source to User-Defined Frequency (will be 1 kHz now)

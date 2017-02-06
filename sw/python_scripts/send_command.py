@@ -109,6 +109,7 @@ def ReadStatus(name = "Current Status"):
   print	"   -> --------------------------------"
   print "   -> i2c commands fifo empty:", fc7.read("stat_i2c_fifo_commands_empty")
   print "   -> i2c replies fifo empty:", fc7.read("stat_i2c_fifo_replies_empty")
+  print "   -> i2c nreplies available:", fc7.read("stat_i2c_nreplies_present")
   print "   -> i2c fsm state:", fc7.read("stat_i2c_fsm")
   print "============================"
 
@@ -199,10 +200,10 @@ SendCommand_CTRL("global_reset")
 sleep(0.5)
 
 # to test I2C Commands (see method definition)
-#I2CTester()
+I2CTester()
 
 # to test Fast Command Block 
-FastTester()
+#FastTester()
 
 # set of commands one may need but not used in FastTester
 #SendCommand_CTRL("fast_orbit_reset")

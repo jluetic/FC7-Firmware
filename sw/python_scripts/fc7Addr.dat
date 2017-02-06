@@ -53,6 +53,7 @@ ipb_daq_system_stat		40000300    ffffffff     1     0
    stat_i2c_fifo_commands_full	40000350    00000002     1     0
    stat_i2c_fifo_replies_empty	40000351    00000001     1     0
    stat_i2c_fifo_replies_full	40000351    00000002     1     0
+   stat_i2c_nreplies_present    40000352    ffffffff     1     0
    stat_rate_ipb		40000340    ffffffff     1     0
    stat_rate_40mhz	        40000341    ffffffff	 1     0
    stat_rate_user		40000342    ffffffff     1     0
