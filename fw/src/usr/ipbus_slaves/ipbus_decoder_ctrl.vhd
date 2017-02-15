@@ -101,19 +101,21 @@ begin
 	process(reset, clk_ipb)
 	--=============================--
 	begin
-	if reset='1' then
-		regs 	 <= (others=> (others=>'0'));
-		ipb_ack_int 	 <= '0';
-		
-		reset_needed <= '0';
-		ipb_global_reset <= '0';
-		
-		ctrl_fastblock_int <= ctrl_fastblock_init0;
-		
-		command_fifo_we_int <= '0';
-		command_fifo_data_int <= (others => '0');
-		
-	elsif rising_edge(clk_ipb) then
+	if rising_edge(clk_ipb) then
+    if reset='1' then
+        regs 	 <= (others=> (others=>'0'));
+        ipb_ack_int 	 <= '0';
+        
+        reset_needed <= '0';		
+        
+        ctrl_fastblock_int <= ctrl_fastblock_init0;
+        
+        command_fifo_we_int <= '0';
+        command_fifo_data_int <= (others => '0');
+        
+        ipb_global_reset <= '0';
+    else 		
+	
 	    regs <= (others=> (others=>'0'));
 	    ipb_global_reset <= '0';
 	    ctrl_fastblock_int <= ctrl_fastblock_init0;
@@ -163,6 +165,7 @@ begin
 --        end if;
         ipb_ack_int <= ipb_mosi_i.ipb_strobe and not ipb_ack_int;        
         --=============================--
+	end if;
 	end if;
 	end process;
 	

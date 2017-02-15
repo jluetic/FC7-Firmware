@@ -258,7 +258,7 @@ begin
     --===================================--	
     
     --===================================--
-    -- Block responsible for I2C command processing. Is connected to: fast command block, hybrids.
+    -- Block responsible for I2C command processing. Is connected to: hybrids.
     --===================================--
     command_processor_block: entity work.command_processor_core
     --===================================--
@@ -300,8 +300,6 @@ begin
         in_stubs                => hybrid_stubs,
         -- trigger status
         stat_fastblock_o        => stat_fast_block,
-        -- used to measure the frequency
-        user_trigger_out        => clk_user,
         -- output fast signals to phy_block
         fast_signal             => fast_signal_to_phy
     );        
@@ -443,7 +441,7 @@ begin
         )  
         PORT MAP (
             clkref   => osc125_a_mgtrefclk_i,
-            clktest  => clk_user,
+            clktest  => fast_signal_to_phy.trigger,
             clkvalue => ipb_clk,
             value    => test_clock_frequency(2)
         );

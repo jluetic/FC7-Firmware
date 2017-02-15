@@ -11,95 +11,69 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="21242487000fs"></ZoomStartTime>
-      <ZoomEndTime time="22560487001fs"></ZoomEndTime>
-      <Cursor1Time time="22248487000fs"></Cursor1Time>
+      <ZoomStartTime time="42622058333333fs"></ZoomStartTime>
+      <ZoomEndTime time="42635278333334fs"></ZoomEndTime>
+      <Cursor1Time time="42627575000000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="175"></NameColumnWidth>
-      <ValueColumnWidth column_width="148"></ValueColumnWidth>
+      <ValueColumnWidth column_width="146"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="17" />
+   <WVObjectSize size="10" />
    <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/l1_trigger_in">
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/l1_trigger_in">
       <obj_property name="ElementShortName">l1_trigger_in</obj_property>
       <obj_property name="ObjectShortName">l1_trigger_in</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/user_trigger">
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/user_trigger">
       <obj_property name="ElementShortName">user_trigger</obj_property>
       <obj_property name="ObjectShortName">user_trigger</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/in_stubs">
-      <obj_property name="ElementShortName">in_stubs[2:1]</obj_property>
-      <obj_property name="ObjectShortName">in_stubs[2:1]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/counter">
-      <obj_property name="ElementShortName">counter[31:0]</obj_property>
-      <obj_property name="ObjectShortName">counter[31:0]</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/reset_counter">
-      <obj_property name="ElementShortName">reset_counter</obj_property>
-      <obj_property name="ObjectShortName">reset_counter</obj_property>
-   </wvobject>
-   <wvobject type="group" fp_name="group149">
-      <obj_property name="label">Config</obj_property>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/ctrl_fastblock_i">
       <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="isExpanded"></obj_property>
-      <wvobject type="other" fp_name="/sim_fast_command_core/UUT/user_trigger_divider">
-         <obj_property name="ElementShortName">user_trigger_divider</obj_property>
-         <obj_property name="ObjectShortName">user_trigger_divider</obj_property>
-      </wvobject>
-      <wvobject type="other" fp_name="/sim_fast_command_core/UUT/triggers_to_accept">
-         <obj_property name="ElementShortName">triggers_to_accept</obj_property>
-         <obj_property name="ObjectShortName">triggers_to_accept</obj_property>
-      </wvobject>
-      <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_source">
-         <obj_property name="ElementShortName">trigger_source[3:0]</obj_property>
-         <obj_property name="ObjectShortName">trigger_source[3:0]</obj_property>
-      </wvobject>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/checked">
-      <obj_property name="ElementShortName">checked</obj_property>
-      <obj_property name="ObjectShortName">checked</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/trigger_i">
-      <obj_property name="ElementShortName">trigger_i</obj_property>
-      <obj_property name="ObjectShortName">trigger_i</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/trigger_o">
-      <obj_property name="ElementShortName">trigger_o</obj_property>
-      <obj_property name="ObjectShortName">trigger_o</obj_property>
-   </wvobject>
-   <wvobject type="other" fp_name="/sim_fast_command_core/UUT/trigger_state">
-      <obj_property name="ElementShortName">trigger_state</obj_property>
-      <obj_property name="ObjectShortName">trigger_state</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/error_code">
-      <obj_property name="ElementShortName">error_code[7:0]</obj_property>
-      <obj_property name="ObjectShortName">error_code[7:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/ctrl_fastblock_i">
       <obj_property name="ElementShortName">ctrl_fastblock_i</obj_property>
       <obj_property name="ObjectShortName">ctrl_fastblock_i</obj_property>
+      <obj_property name="label">CTRL Commands</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/trigger_checker">
-      <obj_property name="ElementShortName">trigger_checker[31:0]</obj_property>
-      <obj_property name="ObjectShortName">trigger_checker[31:0]</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_fast_command_core/UUT/no_triggers">
-      <obj_property name="ElementShortName">no_triggers</obj_property>
-      <obj_property name="ObjectShortName">no_triggers</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/cnfg_fastblock_i">
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/cnfg_fastblock_i">
+      <obj_property name="DisplayName">label</obj_property>
       <obj_property name="ElementShortName">cnfg_fastblock_i</obj_property>
       <obj_property name="ObjectShortName">cnfg_fastblock_i</obj_property>
+      <obj_property name="label">CNFG Input</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/sim_fast_command_core/UUT/fast_signal">
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/stat_fastblock_o.error_code">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">.error_code[7:0]</obj_property>
+      <obj_property name="ObjectShortName">.error_code[7:0]</obj_property>
+      <obj_property name="label">ERROR</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/status_source">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">status_source[3:0]</obj_property>
+      <obj_property name="ObjectShortName">status_source[3:0]</obj_property>
+      <obj_property name="label">Trigger Source</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/status_state">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">status_state</obj_property>
+      <obj_property name="ObjectShortName">status_state</obj_property>
+      <obj_property name="label">Trigger State</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/configured">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">configured</obj_property>
+      <obj_property name="ObjectShortName">configured</obj_property>
+      <obj_property name="label">Trigger Configured</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/fast_signal">
+      <obj_property name="DisplayName">label</obj_property>
       <obj_property name="ElementShortName">fast_signal</obj_property>
       <obj_property name="ObjectShortName">fast_signal</obj_property>
+      <obj_property name="label">FAST SIGNAL OUT</obj_property>
       <obj_property name="isExpanded"></obj_property>
    </wvobject>
 </wave_config>

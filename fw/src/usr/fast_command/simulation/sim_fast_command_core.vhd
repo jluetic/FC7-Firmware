@@ -39,31 +39,11 @@ end sim_fast_command_core;
 
 architecture Behavioral of sim_fast_command_core is
 
-component fast_command_core
-Port (
-clk_40MHz             : in std_logic;
-l1_trigger_in         : in std_logic;
-reset                 : in std_logic;
--- control buses from Command Processor Block
-ctrl_fastblock_i      : in ctrl_fastblock;
-cnfg_fastblock_i      : in cnfg_fastblock;
--- stubs from hybrids
-in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
--- trigger status register output (3-2 - source, 1-0 - state)
-trigger_status_out    : out std_logic_vector(7 downto 0);
--- fast command block error
-error_code            : out std_logic_vector(7 downto 0);
-user_trigger_out      : out std_logic;
--- output fast signals to phy_block
-fast_signal           : out cmd_fastbus
-);
-end component;
-
 constant clk40_period : time := 25 ns;
 constant clk160_period : time := 6.25 ns;
 constant clk_lhc_period : time := 23 ns;
 
-constant ctrl_fastblock_init0   : ctrl_fastblock := (cmd_strobe => '0',
+constant ctrl_fastblock_init0   : ctrl_fastblock_type := (cmd_strobe => '0',
                                                      reset => '0',
                                                      load_config => '0',
                                                      start_trigger => '0',
@@ -76,8 +56,8 @@ constant ctrl_fastblock_init0   : ctrl_fastblock := (cmd_strobe => '0',
 signal clk_40MHz : std_logic;
 signal clk_lhc : std_logic;
 signal in_stubs : std_logic_vector(NUM_HYBRIDS downto 1) := "00";
-signal cnfg_fastblock_i : cnfg_fastblock;
-signal ctrl_fastblock_i : ctrl_fastblock := ctrl_fastblock_init0;
+signal cnfg_fastblock_i : cnfg_fastblock_type;
+signal ctrl_fastblock_i : ctrl_fastblock_type := ctrl_fastblock_init0;
 
 signal trigger_source : std_logic_vector(3 downto 0) := x"0";
 signal trigger_source_prev : std_logic_vector(3 downto 0) := x"0";
@@ -89,10 +69,30 @@ begin
 
     cnfg_fastblock_i.trigger_source     <= trigger_source;
     cnfg_fastblock_i.triggers_to_accept <= 0;
-    cnfg_fastblock_i.user_trigger_frequency            <= 100;
+    cnfg_fastblock_i.user_trigger_frequency            <= 1000;
     cnfg_fastblock_i.stubs_mask         <= x"00000003";
-
-    UUT: fast_command_core port map(clk_40MHz, clk_lhc, '0', ctrl_fastblock_i, cnfg_fastblock_i, in_stubs, open, open, open, open);
+ 
+    --===================================--
+    -- Fast commands. Connected to: physical interface, hybrids.
+    --===================================--
+    uut_fast_command_block: entity work.fast_command_core
+    --===================================--
+    port map
+    (
+        clk_40Mhz               => clk_40MHz,
+        l1_trigger_in           => clk_lhc,
+        reset                   => '0',
+        -- control buses from Command Processor Block
+        ctrl_fastblock_i        => ctrl_fastblock_i,
+        cnfg_fastblock_i        => cnfg_fastblock_i,
+        -- stubs from hybrids
+        in_stubs                => in_stubs,
+        -- trigger status
+        stat_fastblock_o        => open,
+        -- output fast signals to phy_block
+        fast_signal             => open
+    );        
+    --===================================-- 
     
     clk40_process: process
     begin
@@ -121,9 +121,9 @@ begin
         trigger_start <= not trigger_start;
         wait for 500 ns;
         trigger_source <= x"3";
-        wait for 100 ns;
-        trigger_start <= not trigger_start;
         wait for 500 ns;
+        trigger_start <= not trigger_start;
+        wait for 5000 ns;
     end process;
     
     strobe_process: process(clk_40MHz)

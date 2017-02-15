@@ -13,15 +13,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="11168333333fs"></ZoomStartTime>
-      <ZoomEndTime time="14488333334fs"></ZoomEndTime>
-      <Cursor1Time time="14547000000fs"></Cursor1Time>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="67300000001fs"></ZoomEndTime>
+      <Cursor1Time time="16000000000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="201"></NameColumnWidth>
-      <ValueColumnWidth column_width="110"></ValueColumnWidth>
+      <ValueColumnWidth column_width="108"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="14" />
+   <WVObjectSize size="4" />
    <wvobject type="logic" fp_name="/sim_command_processor_core/clk_40MHz">
       <obj_property name="ElementShortName">clk_40MHz</obj_property>
       <obj_property name="ObjectShortName">clk_40MHz</obj_property>
@@ -30,112 +30,44 @@
       <obj_property name="ElementShortName">clk_ipb</obj_property>
       <obj_property name="ObjectShortName">clk_ipb</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/command_processor_block/reset">
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="ElementShortName">reset</obj_property>
-      <obj_property name="ObjectShortName">reset</obj_property>
-      <obj_property name="label">RESET</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_command_processor_core/ipb_mosi_i[1]">
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="ElementShortName">[1]</obj_property>
-      <obj_property name="ObjectShortName">[1]</obj_property>
-      <obj_property name="label">IPBus Request</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/sim_command_processor_core/command_processor_block/ipb_miso_o[1]">
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="ElementShortName">[1]</obj_property>
-      <obj_property name="ObjectShortName">[1]</obj_property>
-      <obj_property name="label">IPBus Reply</obj_property>
-      <obj_property name="isExpanded"></obj_property>
-   </wvobject>
-   <wvobject type="group" fp_name="group30">
-      <obj_property name="label">Trigger</obj_property>
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="isExpanded"></obj_property>
-      <wvobject type="array" fp_name="/sim_command_processor_core/fast_command_block/ctrl_fastblock_i">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">ctrl_fastblock_i</obj_property>
-         <obj_property name="ObjectShortName">ctrl_fastblock_i</obj_property>
-         <obj_property name="label">CTRL from CommBlock</obj_property>
-      </wvobject>
-      <wvobject type="other" fp_name="/sim_command_processor_core/fast_command_block/trigger_state">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">trigger_state</obj_property>
-         <obj_property name="ObjectShortName">trigger_state</obj_property>
-         <obj_property name="label">Trigger State</obj_property>
-      </wvobject>
-      <wvobject type="logic" fp_name="/sim_command_processor_core/fast_command_block/trigger_start_loc">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">trigger_start_loc</obj_property>
-         <obj_property name="ObjectShortName">trigger_start_loc</obj_property>
-         <obj_property name="label">Start Command</obj_property>
-      </wvobject>
-      <wvobject type="logic" fp_name="/sim_command_processor_core/fast_command_block/trigger_stop_loc">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">trigger_stop_loc</obj_property>
-         <obj_property name="ObjectShortName">trigger_stop_loc</obj_property>
-         <obj_property name="label">Stop Command</obj_property>
-      </wvobject>
-      <wvobject type="logic" fp_name="/sim_command_processor_core/fast_command_block/no_triggers">
-         <obj_property name="ElementShortName">no_triggers</obj_property>
-         <obj_property name="ObjectShortName">no_triggers</obj_property>
-      </wvobject>
-      <wvobject type="array" fp_name="/sim_command_processor_core/fast_command_block/fast_signal">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">fast_signal</obj_property>
-         <obj_property name="ObjectShortName">fast_signal</obj_property>
-         <obj_property name="label">FAST SIGNALS</obj_property>
-         <obj_property name="isExpanded"></obj_property>
-      </wvobject>
-   </wvobject>
    <wvobject type="group" fp_name="group209">
       <obj_property name="label">I2C</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="isExpanded"></obj_property>
       <wvobject type="array" fp_name="/sim_command_processor_core/i2c_request">
          <obj_property name="ElementShortName">i2c_request</obj_property>
          <obj_property name="ObjectShortName">i2c_request</obj_property>
+         <obj_property name="isExpanded"></obj_property>
       </wvobject>
       <wvobject type="array" fp_name="/sim_command_processor_core/i2c_reply">
          <obj_property name="ElementShortName">i2c_reply</obj_property>
          <obj_property name="ObjectShortName">i2c_reply</obj_property>
       </wvobject>
-      <wvobject type="array" fp_name="/sim_command_processor_core/command_processor_block/fifo_statuses">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">fifo_statuses</obj_property>
-         <obj_property name="ObjectShortName">fifo_statuses</obj_property>
-         <obj_property name="label">I2C FIFO STATUSES</obj_property>
-         <obj_property name="isExpanded"></obj_property>
-      </wvobject>
    </wvobject>
-   <wvobject type="group" fp_name="group91">
-      <obj_property name="label">SIMULATION SIGNALS</obj_property>
+   <wvobject type="array" fp_name="/sim_command_processor_core/stat_command_block.fifo_statuses">
       <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">.fifo_statuses</obj_property>
+      <obj_property name="ObjectShortName">.fifo_statuses</obj_property>
+      <obj_property name="label">FIFO Statuses</obj_property>
       <obj_property name="isExpanded"></obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/new_iteration_sig">
-      <obj_property name="ElementShortName">new_iteration_sig</obj_property>
-      <obj_property name="ObjectShortName">new_iteration_sig</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/end_of_i2c_write_sig">
-      <obj_property name="ElementShortName">end_of_i2c_write_sig</obj_property>
-      <obj_property name="ObjectShortName">end_of_i2c_write_sig</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/end_of_i2c_read_sig">
-      <obj_property name="ElementShortName">end_of_i2c_read_sig</obj_property>
-      <obj_property name="ObjectShortName">end_of_i2c_read_sig</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/trigger_started_sig">
-      <obj_property name="ElementShortName">trigger_started_sig</obj_property>
-      <obj_property name="ObjectShortName">trigger_started_sig</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/trigger_stopped_sig">
-      <obj_property name="ElementShortName">trigger_stopped_sig</obj_property>
-      <obj_property name="ObjectShortName">trigger_stopped_sig</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/sim_command_processor_core/i2c_read_fifo">
-      <obj_property name="ElementShortName">i2c_read_fifo</obj_property>
-      <obj_property name="ObjectShortName">i2c_read_fifo</obj_property>
+      <wvobject type="logic" fp_name="/sim_command_processor_core/stat_command_block.fifo_statuses.i2c_commands_empty">
+         <obj_property name="ElementShortName">.i2c_commands_empty</obj_property>
+         <obj_property name="ObjectShortName">.i2c_commands_empty</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_command_processor_core/stat_command_block.fifo_statuses.i2c_commands_full">
+         <obj_property name="ElementShortName">.i2c_commands_full</obj_property>
+         <obj_property name="ObjectShortName">.i2c_commands_full</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_command_processor_core/stat_command_block.fifo_statuses.i2c_replies_empty">
+         <obj_property name="ElementShortName">.i2c_replies_empty</obj_property>
+         <obj_property name="ObjectShortName">.i2c_replies_empty</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_command_processor_core/stat_command_block.fifo_statuses.i2c_replies_full">
+         <obj_property name="ElementShortName">.i2c_replies_full</obj_property>
+         <obj_property name="ObjectShortName">.i2c_replies_full</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/sim_command_processor_core/stat_command_block.fifo_statuses.i2c_nreplies_present">
+         <obj_property name="ElementShortName">.i2c_nreplies_present[15:0]</obj_property>
+         <obj_property name="ObjectShortName">.i2c_nreplies_present[15:0]</obj_property>
+      </wvobject>
    </wvobject>
 </wave_config>

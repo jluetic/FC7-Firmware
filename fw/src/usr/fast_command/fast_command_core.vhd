@@ -30,8 +30,6 @@ entity fast_command_core is
     in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
     -- fast block status
     stat_fastblock_o      : out stat_fastblock_type;
-    -- used to measure the frequency
-    user_trigger_out      : out std_logic;
     -- output fast signals to phy_block
     fast_signal           : out cmd_fastbus
   );
@@ -92,8 +90,6 @@ begin
     reset_int <= reset or ipb_reset;
 
     stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
-    
-    user_trigger_out <= user_trigger;
     
     -- status
     stat_fastblock_o.trigger_status(7 downto 6) <= "00";

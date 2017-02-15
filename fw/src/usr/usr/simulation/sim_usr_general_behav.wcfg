@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="sim_usr_general_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="ipbus" />
+            <top_module name="sim_usr_general" />
+            <top_module name="system_package" />
+            <top_module name="user_package" />
+            <top_module name="user_version_package" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="14400000000fs"></ZoomStartTime>
+      <ZoomEndTime time="15746000001fs"></ZoomEndTime>
+      <Cursor1Time time="15080000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="201"></NameColumnWidth>
+      <ValueColumnWidth column_width="108"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="6" />
+   <wvobject type="logic" fp_name="/sim_usr_general/clk_40MHz_p">
+      <obj_property name="ElementShortName">clk_40MHz_p</obj_property>
+      <obj_property name="ObjectShortName">clk_40MHz_p</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_usr_general/clk_125MHz">
+      <obj_property name="ElementShortName">clk_125MHz</obj_property>
+      <obj_property name="ObjectShortName">clk_125MHz</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_usr_general/clk_ipb">
+      <obj_property name="ElementShortName">clk_ipb</obj_property>
+      <obj_property name="ObjectShortName">clk_ipb</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_usr_general/ipb_mosi_i">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">ipb_mosi_i[0:2]</obj_property>
+      <obj_property name="ObjectShortName">ipb_mosi_i[0:2]</obj_property>
+      <obj_property name="label">ipb_requests</obj_property>
+      <wvobject type="array" fp_name="/sim_usr_general/ipb_mosi_i[0]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[0]</obj_property>
+         <obj_property name="ObjectShortName">[0]</obj_property>
+         <obj_property name="label">cnfg</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/sim_usr_general/ipb_mosi_i[1]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[1]</obj_property>
+         <obj_property name="ObjectShortName">[1]</obj_property>
+         <obj_property name="label">ctrl</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/sim_usr_general/ipb_mosi_i[2]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[2]</obj_property>
+         <obj_property name="ObjectShortName">[2]</obj_property>
+         <obj_property name="label">stat</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">ipb_miso_o[0:2]</obj_property>
+      <obj_property name="ObjectShortName">ipb_miso_o[0:2]</obj_property>
+      <obj_property name="label">ipb_answers</obj_property>
+      <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o[0]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[0]</obj_property>
+         <obj_property name="ObjectShortName">[0]</obj_property>
+         <obj_property name="label">cnfg</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o[1]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[1]</obj_property>
+         <obj_property name="ObjectShortName">[1]</obj_property>
+         <obj_property name="label">ctrl</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o[2]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[2]</obj_property>
+         <obj_property name="ObjectShortName">[2]</obj_property>
+         <obj_property name="label">stat</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group87">
+      <obj_property name="label">SIMULATION SIGNALS</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/sim_usr_general/new_iteration_sig">
+         <obj_property name="ElementShortName">new_iteration_sig</obj_property>
+         <obj_property name="ObjectShortName">new_iteration_sig</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_usr_general/end_of_i2c_write_sig">
+         <obj_property name="ElementShortName">end_of_i2c_write_sig</obj_property>
+         <obj_property name="ObjectShortName">end_of_i2c_write_sig</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_usr_general/end_of_i2c_read_sig">
+         <obj_property name="ElementShortName">end_of_i2c_read_sig</obj_property>
+         <obj_property name="ObjectShortName">end_of_i2c_read_sig</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_usr_general/trigger_started_sig">
+         <obj_property name="ElementShortName">trigger_started_sig</obj_property>
+         <obj_property name="ObjectShortName">trigger_started_sig</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_usr_general/trigger_stopped_sig">
+         <obj_property name="ElementShortName">trigger_stopped_sig</obj_property>
+         <obj_property name="ObjectShortName">trigger_stopped_sig</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/sim_usr_general/i2c_read_fifo">
+         <obj_property name="ElementShortName">i2c_read_fifo</obj_property>
+         <obj_property name="ObjectShortName">i2c_read_fifo</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>
