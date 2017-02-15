@@ -160,17 +160,22 @@ architecture usr of user_core is
     -- IPBus Clock
     signal ipb_clk					: std_logic;
     
+    -- Global reset signal from IPBus
+    signal ipb_global_reset      : std_logic;
+    
     --===================================--
     -- Command Processor Block Signals
     --===================================--
+    -- control of command processor block
+    signal cnfg_command_block               : cnfg_command_block_type;
+    signal ctrl_command_block_from_ipbus    : ctrl_command_block_from_ipbus_type;
+    signal ctrl_command_block_to_ipbus      : ctrl_command_block_to_ipbus_type;
+    signal stat_command_block               : stat_command_block_type;
+    
     -- I2C command lines from Command Processor Block to PHY and back
     signal i2c_request              : cmd_wbus;
     signal i2c_reply                : cmd_rbus;
-    -- Control bus from Command Processor Block to Fast Command Block
-    signal fast_block_ctrl       : ctrl_fastblock;
-    signal fast_block_cnfg       : cnfg_fastblock;
-    -- Global reset signal from IPBus
-    signal ipb_global_reset      : std_logic;
+    signal i2c_fifo_statuses        : fifo_stat;    
     --===================================--
    
     --===================================--
@@ -182,6 +187,10 @@ architecture usr of user_core is
     signal hybrid_stubs             : std_logic_vector(NUM_HYBRIDS downto 1);
     signal fast_block_status_fsm    : std_logic_vector(7 downto 0);
     signal fast_block_error         : std_logic_vector(7 downto 0);
+    -- Control bus to Fast Command Block
+    signal ctrl_fast_block          : ctrl_fastblock_type;
+    signal cnfg_fast_block          : cnfg_fastblock_type;
+    signal stat_fast_block          : stat_fastblock_type;
     --===================================--
     
     signal test_clock_frequency     : array_4x32bit;
@@ -257,27 +266,16 @@ begin
     (
         clk_40MHz       => clk_40MHz,
         ipb_clk         => ipb_clk,
-        reset           => ipb_global_reset,
-        -- command from IpBus
-        ipb_mosi_i      => ipb_mosi_i,
-        ipb_miso_o      => ipb_miso_o,
-        -- global control
-        ipb_global_reset_o  => ipb_global_reset,
-        -- fast command block control lines
-        ctrl_fastblock_o    => fast_block_ctrl,
-        cnfg_fastblock_o    => fast_block_cnfg,
-        -- should be output command register
+        reset           => ipb_global_reset,     
+        -- controls from ipbus
+        cnfg_command_block              => cnfg_command_block,
+        ctrl_command_block_from_ipbus   => ctrl_command_block_from_ipbus,    
+        ctrl_command_block_to_ipbus     => ctrl_command_block_to_ipbus,
+        -- fifo statuses out
+        stat_command_block              => stat_command_block,
+        -- i2c commands
         i2c_request     => i2c_request,
-        i2c_reply       => i2c_reply,
-        --===================================--
-        -- statuses from other blocks
-        --===================================--
-        status_fast_block_fsm   => fast_block_status_fsm,
-        test_clock_frequency    => test_clock_frequency,
-        --===================================--
-        -- errors from other blocks
-        --===================================--
-        error_fast_block        => fast_block_error
+        i2c_reply       => i2c_reply        
     );        
     --===================================--    
     phy_answer_generator: entity work.answer_block
@@ -296,14 +294,12 @@ begin
         l1_trigger_in           => '0',
         reset                   => ipb_global_reset,
         -- control buses from Command Processor Block
-        ctrl_fastblock_i        => fast_block_ctrl,
-        cnfg_fastblock_i        => fast_block_cnfg,
+        ctrl_fastblock_i        => ctrl_fast_block,
+        cnfg_fastblock_i        => cnfg_fast_block,
         -- stubs from hybrids
         in_stubs                => hybrid_stubs,
-        -- trigger status register output (3-2 - source, 1-0 - state)
-        trigger_status_out      => fast_block_status_fsm,
-        -- fast command block error
-        error_code              => fast_block_error,
+        -- trigger status
+        stat_fastblock_o        => stat_fast_block,
         -- used to measure the frequency
         user_trigger_out        => clk_user,
         -- output fast signals to phy_block
@@ -353,6 +349,68 @@ begin
     --(
     --);        
     --===================================-- 
+    
+    
+    --===================================--
+    -- IPBus Control Decoder
+    --===================================--
+    ipbus_decoder_ctrl: entity work.ipbus_decoder_ctrl
+    --===================================--
+    port map
+    (   
+        clk_ipb               => ipb_clk,
+        clk_40MHz             => clk_40MHz,
+        reset                 => ipb_global_reset,
+        ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_ctrl_sel),
+        ipb_miso_o            => ipb_miso_o(ipb_daq_system_ctrl_sel),
+        -- global commands
+        ipb_global_reset      => ipb_global_reset,
+        -- fast commands
+        ctrl_fastblock_o      => ctrl_fast_block,
+        -- command processor
+        ctrl_command_block_from_ipbus   => ctrl_command_block_from_ipbus,                    
+        ctrl_command_block_to_ipbus     => ctrl_command_block_to_ipbus 
+    );
+    --===================================--
+    
+    --===================================--
+    -- IPBus Config Decoder
+    --===================================--
+    ipbus_decoder_cnfg: entity work.ipbus_decoder_cnfg
+    --===================================--
+    port map
+    (   
+        clk                   => ipb_clk,
+        reset                 => ipb_global_reset,
+        ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_cnfg_sel),
+        ipb_miso_o            => ipb_miso_o(ipb_daq_system_cnfg_sel),
+        -- fast block
+        cnfg_fastblock_o      => cnfg_fast_block,
+        -- command block
+        cnfg_command_block_o  => cnfg_command_block
+    );
+    --===================================--
+    
+    --===================================--
+    -- IPBus Status Decoder
+    --===================================--
+    ipbus_decoder_stat: entity work.ipbus_decoder_stat
+    --===================================--
+    port map
+    (   
+        clk                   => ipb_clk,
+        reset                 => ipb_global_reset,
+        ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_stat_sel),
+        ipb_miso_o            => ipb_miso_o(ipb_daq_system_stat_sel),
+        -- fast command block statuses
+        stat_fast_block_i      => stat_fast_block,
+        -- command block statuses
+        stat_command_block_i  => stat_command_block,        
+        -- clock frequencies tester
+        test_clock_frequency   => test_clock_frequency
+    );
+    --===================================--
+    
     
     clkRate0 : clkRateTool32
     GENERIC MAP (

@@ -31,14 +31,10 @@ port (
         -- global commands
         ipb_global_reset      : out std_logic;
         -- fast commands
-        ctrl_fastblock_o      : out ctrl_fastblock;
-        -- i2c commands
-        i2c_reset             : out std_logic;
-        i2c_reset_fifos       : out std_logic;
-        command_fifo_we_o     : out std_logic;
-        command_fifo_data_o   : out std_logic_vector(31 downto 0);
-        reply_fifo_read_next_o: out std_logic;
-        reply_fifo_data_i     : in std_logic_vector(31 downto 0)
+        ctrl_fastblock_o      : out ctrl_fastblock_type;
+        -- command processor
+        ctrl_command_block_from_ipbus   : out ctrl_command_block_from_ipbus_type;                    
+        ctrl_command_block_to_ipbus     : in ctrl_command_block_to_ipbus_type
      );
 end ipbus_decoder_ctrl;
 
@@ -52,17 +48,17 @@ architecture rtl of ipbus_decoder_ctrl is
     attribute keep: boolean;
     attribute keep of sel: signal is true;
     
-    constant ctrl_fastblock_init0   : ctrl_fastblock := (cmd_strobe => '0',
-                                                         reset => '0',
-                                                         load_config => '0',
-                                                         start_trigger => '0',
-                                                         stop_trigger => '0',
-                                                         ipb_fast_reset => '0',
-                                                         ipb_test_pulse => '0',
-                                                         ipb_trigger => '0',
-                                                         ipb_orbit_reset => '0');
+    constant ctrl_fastblock_init0   : ctrl_fastblock_type := (cmd_strobe => '0',
+                                                             reset => '0',
+                                                             load_config => '0',
+                                                             start_trigger => '0',
+                                                             stop_trigger => '0',
+                                                             ipb_fast_reset => '0',
+                                                             ipb_test_pulse => '0',
+                                                             ipb_trigger => '0',
+                                                             ipb_orbit_reset => '0');
                                                          
-    signal ctrl_fastblock_int       : ctrl_fastblock;
+    signal ctrl_fastblock_int       : ctrl_fastblock_type;
     
     signal command_fifo_we_int      : std_logic := '0';
     signal command_fifo_data_int    : std_logic_vector(31 downto 0) := (others => '0');
@@ -121,8 +117,8 @@ begin
 	    regs <= (others=> (others=>'0'));
 	    ipb_global_reset <= '0';
 	    ctrl_fastblock_int <= ctrl_fastblock_init0;
-        i2c_reset <= '0';
-        i2c_reset_fifos <= '0';
+        ctrl_command_block_from_ipbus.i2c_reset <= '0';
+        ctrl_command_block_from_ipbus.i2c_reset_fifos <= '0';
         command_fifo_we_int <= '0';
 
         -- one clock cycle delay before reset, otherwise computer will not receive the confirmation
@@ -149,8 +145,8 @@ begin
                 ctrl_fastblock_int.ipb_trigger <= ipb_mosi_i.ipb_wdata(SCG_CFS_TRIGGER_BIT); 
                 ctrl_fastblock_int.ipb_orbit_reset <= ipb_mosi_i.ipb_wdata(SCG_CFS_ORBIT_RESET_BIT);
             elsif sel = I2C_CONTROL_SEL then
-                i2c_reset <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_BIT);
-                i2c_reset_fifos <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_FIFOS_BIT);  
+                ctrl_command_block_from_ipbus.i2c_reset <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_BIT);
+                ctrl_command_block_from_ipbus.i2c_reset_fifos <= ipb_mosi_i.ipb_wdata(I2C_CONTROL_RESET_FIFOS_BIT);  
             elsif sel = I2C_COMMAND_FIFO_SEL then
                 command_fifo_we_int <= '1';
                 command_fifo_data_int <= ipb_mosi_i.ipb_wdata;    
@@ -170,12 +166,12 @@ begin
 	end if;
 	end process;
 	
-	ipb_miso_o.ipb_rdata <= reply_fifo_data_i when (sel = I2C_REPLY_FIFO_SEL and ipb_mosi_i.ipb_strobe = '1') else regs(sel);
-	reply_fifo_read_next_o <= ipb_ack_int when (ipb_mosi_i.ipb_write='0' and sel = I2C_REPLY_FIFO_SEL) else '0';	
+	ipb_miso_o.ipb_rdata <= ctrl_command_block_to_ipbus.reply_fifo_data when (sel = I2C_REPLY_FIFO_SEL and ipb_mosi_i.ipb_strobe = '1') else regs(sel);
+	ctrl_command_block_from_ipbus.reply_fifo_read_next <= ipb_ack_int when (ipb_mosi_i.ipb_write='0' and sel = I2C_REPLY_FIFO_SEL) else '0';	
 	ipb_miso_o.ipb_ack <= ipb_ack_int;
 	ipb_miso_o.ipb_err <= '0';
-	command_fifo_we_o <= command_fifo_we_int;
-	command_fifo_data_o <= command_fifo_data_int;
+	ctrl_command_block_from_ipbus.command_fifo_we <= command_fifo_we_int;
+	ctrl_command_block_from_ipbus.command_fifo_data <= command_fifo_data_int;
 	
 	--=============================--
 	-- Clock synchronization

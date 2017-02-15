@@ -28,9 +28,9 @@ port (
         ipb_mosi_i            : in  ipb_wbus;
         ipb_miso_o            : out ipb_rbus;
         -- fast command block configuration
-        cnfg_fastblock_o      : out cnfg_fastblock;
-        -- i2c mask
-        i2c_mask              : out std_logic_vector(7 downto 0)
+        cnfg_fastblock_o      : out cnfg_fastblock_type;
+        -- command block configuration
+        cnfg_command_block_o  : out cnfg_command_block_type
      );
 end ipbus_decoder_cnfg;
 
@@ -107,6 +107,6 @@ begin
 	cnfg_fastblock_o.user_trigger_frequency <= to_integer(unsigned(regs(SCG_FSG_CYCLE_FREQUENCY_SEL)));
 	cnfg_fastblock_o.stubs_mask <= regs(SCG_FSG_MASK_SEL);
 	
-	i2c_mask <= regs(I2C_WRITE_MASK_SEL)(I2C_WRITE_MASK_OFFSET + I2C_WRITE_MASK_WIDTH -1 downto I2C_WRITE_MASK_OFFSET);
+	cnfg_command_block_o.i2c_mask <= regs(I2C_WRITE_MASK_SEL)(I2C_WRITE_MASK_OFFSET + I2C_WRITE_MASK_WIDTH -1 downto I2C_WRITE_MASK_OFFSET);
 
 end rtl;

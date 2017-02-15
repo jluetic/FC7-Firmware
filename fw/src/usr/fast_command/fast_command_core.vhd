@@ -24,14 +24,12 @@ entity fast_command_core is
     l1_trigger_in         : in std_logic;
     reset                 : in std_logic;
     -- control buses from Command Processor Block
-    ctrl_fastblock_i      : in ctrl_fastblock;
-    cnfg_fastblock_i      : in cnfg_fastblock;
+    ctrl_fastblock_i      : in ctrl_fastblock_type;
+    cnfg_fastblock_i      : in cnfg_fastblock_type;
     -- stubs from hybrids
     in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
-    -- trigger status register output (3-0 - source, 4 - state, 5 - configured)
-    trigger_status_out    : out std_logic_vector(7 downto 0);
-    -- fast command block error
-    error_code            : out std_logic_vector(7 downto 0);
+    -- fast block status
+    stat_fastblock_o      : out stat_fastblock_type;
     -- used to measure the frequency
     user_trigger_out      : out std_logic;
     -- output fast signals to phy_block
@@ -98,10 +96,10 @@ begin
     user_trigger_out <= user_trigger;
     
     -- status
-    trigger_status_out(7 downto 6) <= "00";
-    trigger_status_out(5)          <= configured;
-    trigger_status_out(4)          <= status_state;
-    trigger_status_out(3 downto 0) <= status_source;
+    stat_fastblock_o.trigger_status(7 downto 6) <= "00";
+    stat_fastblock_o.trigger_status(5)          <= configured;
+    stat_fastblock_o.trigger_status(4)          <= status_state;
+    stat_fastblock_o.trigger_status(3 downto 0) <= status_source;
 
 --===================================--
 clk_divider: entity work.clock_divider
@@ -281,7 +279,7 @@ STATE_PROCESS: process (reset_int, clk_40MHz)
 begin
     if reset_int = '1' then
        trigger_state <= Idle;
-       error_code <= x"00";
+       stat_fastblock_o.error_code <= x"00";
     elsif rising_edge(clk_40MHz) then
         reset_counter <= '0';
         case trigger_state is
@@ -290,7 +288,7 @@ begin
                 status_state <= '0';
                 clock_enable <= '0';
                 if trigger_start_loc = '1' then
-                    error_code <= x"00";
+                    stat_fastblock_o.error_code <= x"00";
                     reset_counter <= '1';
                     trigger_state <= Running;
                 end if;    
@@ -304,7 +302,7 @@ begin
                 elsif no_triggers = '1' then
                     clock_enable <= '0';
                     -- no triggers
-                    error_code <= x"03";
+                    stat_fastblock_o.error_code <= x"03";
                     trigger_state <= Idle;
                 elsif triggers_to_accept /= 0 and TO_INTEGER(unsigned(counter))+1 > triggers_to_accept then
                     clock_enable <= '0';
@@ -314,7 +312,7 @@ begin
                 clock_enable <= '0';
                 trigger_state <= Idle;
                 -- unknown state
-                error_code <= x"01";             
+                stat_fastblock_o.error_code <= x"01";             
         end case;
     end if;
 end process;

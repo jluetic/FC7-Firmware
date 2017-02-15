@@ -28,13 +28,10 @@ port (
         ipb_mosi_i            : in  ipb_wbus;
         ipb_miso_o            : out ipb_rbus;
         -- fast command block statuses
-        status_fast_block_fsm : in  std_logic_vector(7 downto 0);
-        error_fast_block      : in  std_logic_vector(7 downto 0);
-        -- i2c master statuses
-        status_i2c_master_fsm : in  std_logic_vector(3 downto 0);
-        error_i2c_master      : in  std_logic_vector(7 downto 0);
-        fifo_statuses         : in  fifo_stat;
-        test_clock_frequency    : in array_4x32bit
+        stat_fast_block_i     : in stat_fastblock_type;
+        -- stat command block
+        stat_command_block_i  : in stat_command_block_type;
+        test_clock_frequency  : in array_4x32bit
      );
 end ipbus_decoder_stat;
 
@@ -92,14 +89,14 @@ begin
 	
 	regs(0)(31 downto 28) <= status_error_block_id;
 	regs(0)(27 downto 20) <= status_error_code;
-	regs(0)(15 downto 8)  <= status_fast_block_fsm;
-	regs(0)(3 downto 0) <= status_i2c_master_fsm;
+	regs(0)(15 downto 8)  <= stat_fast_block_i.trigger_status;
+	regs(0)(3 downto 0) <= stat_command_block_i.status_i2c_master_fsm;
 	
-	regs(I2C_COMMANDS_FIFO_STAT_SEL)(I2C_COMMANDS_FIFO_EMPTY_BIT) <= fifo_statuses.i2c_commands_empty;
-	regs(I2C_COMMANDS_FIFO_STAT_SEL)(I2C_COMMANDS_FIFO_FULL_BIT) <= fifo_statuses.i2c_commands_full;
-	regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_EMPTY_BIT) <= fifo_statuses.i2c_replies_empty;
-    regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_FULL_BIT) <= fifo_statuses.i2c_replies_full;
-    regs(I2C_NREPLIES_SEL)(15 downto 0) <= fifo_statuses.i2c_nreplies_present;
+	regs(I2C_COMMANDS_FIFO_STAT_SEL)(I2C_COMMANDS_FIFO_EMPTY_BIT) <= stat_command_block_i.fifo_statuses.i2c_commands_empty;
+	regs(I2C_COMMANDS_FIFO_STAT_SEL)(I2C_COMMANDS_FIFO_FULL_BIT) <= stat_command_block_i.fifo_statuses.i2c_commands_full;
+	regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_EMPTY_BIT) <= stat_command_block_i.fifo_statuses.i2c_replies_empty;
+    regs(I2C_REPLIES_FIFO_STAT_SEL)(I2C_REPLIES_FIFO_FULL_BIT) <= stat_command_block_i.fifo_statuses.i2c_replies_full;
+    regs(I2C_NREPLIES_SEL)(15 downto 0) <= stat_command_block_i.fifo_statuses.i2c_nreplies_present;
     regs(I2C_NREPLIES_SEL)(31 downto 16) <= (others => '0');
     
     regs(TEST_CLOCK_IPB) <= test_clock_frequency(0);
@@ -112,12 +109,12 @@ begin
        status_error_block_id <= x"0";
        status_error_code <= x"00"; 
     elsif rising_edge(clk) then
-        if error_fast_block /= x"00" then
+        if stat_fast_block_i.error_code /= x"00" then
             status_error_block_id <= x"2";
-            status_error_code <= error_fast_block;
-        elsif error_i2c_master /= x"00" then
+            status_error_code <= stat_fast_block_i.error_code;
+        elsif stat_command_block_i.error_i2c_master /= x"00" then
             status_error_block_id <= x"3";
-            status_error_code <= error_i2c_master; 
+            status_error_code <= stat_command_block_i.error_i2c_master; 
         else
             status_error_block_id <= x"0";
             status_error_code <= x"00";  
