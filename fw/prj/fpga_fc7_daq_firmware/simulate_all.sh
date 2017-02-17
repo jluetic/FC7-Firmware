@@ -6,12 +6,12 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 if [ -d "./fpga_fc7_daq_firmware/" ]; then
-	if [ ! -d "./fpga_fc7_daq_firmware/simulation_console_command_processor/xsim" ]; then
-		vivado -mode batch -nolog -nojournal -source create_simulation_command_processor_block.tcl ./fpga_fc7_daq_firmware/fpga_fc7_daq_firmware.xpr
+	if [ ! -d "./fpga_fc7_daq_firmware/simulation_console_all/xsim" ]; then
+		vivado -mode batch -nolog -nojournal -source create_simulation_general.tcl ./fpga_fc7_daq_firmware/fpga_fc7_daq_firmware.xpr
 	fi
-	cd ./fpga_fc7_daq_firmware/simulation_console_command_processor/xsim
-	bash ./sim_command_processor_core.sh -reset_run
-	bash ./sim_command_processor_core.sh
+	cd ./fpga_fc7_daq_firmware/simulation_console_all/xsim
+	bash ./sim_general.sh -reset_run
+	bash ./sim_general.sh
 
 	rm ./*.backup.log
 	echo -e "${RED}"

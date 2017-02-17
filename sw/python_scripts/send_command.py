@@ -16,14 +16,14 @@ fc7 = ChipsBusUdp(fc7AddrTable, ipaddr, 50001)
 # Combine and Send I2C Command
 def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read, register_address, data):
 
-  raw_command = fc7AddrTable.getItem("ctrl_i2c_command_type").shiftDataToMask(command)
-  raw_hybrid_id = fc7AddrTable.getItem("ctrl_i2c_command_hybrid_id").shiftDataToMask(hybrid_id)
-  raw_chip_id = fc7AddrTable.getItem("ctrl_i2c_command_chip_id").shiftDataToMask(chip_id)
-  raw_use_mask = fc7AddrTable.getItem("ctrl_i2c_command_mask").shiftDataToMask(use_mask)
-  raw_page = fc7AddrTable.getItem("ctrl_i2c_command_page").shiftDataToMask(page)
-  raw_read = fc7AddrTable.getItem("ctrl_i2c_command_read").shiftDataToMask(read)
-  raw_register = fc7AddrTable.getItem("ctrl_i2c_command_register").shiftDataToMask(register_address)
-  raw_data = fc7AddrTable.getItem("ctrl_i2c_command_data").shiftDataToMask(data)
+  raw_command = fc7AddrTable.getItem("ctrl_command_i2c_command_type").shiftDataToMask(command)
+  raw_hybrid_id = fc7AddrTable.getItem("ctrl_command_i2c_command_hybrid_id").shiftDataToMask(hybrid_id)
+  raw_chip_id = fc7AddrTable.getItem("ctrl_command_i2c_command_chip_id").shiftDataToMask(chip_id)
+  raw_use_mask = fc7AddrTable.getItem("ctrl_command_i2c_command_mask").shiftDataToMask(use_mask)
+  raw_page = fc7AddrTable.getItem("ctrl_command_i2c_command_page").shiftDataToMask(page)
+  raw_read = fc7AddrTable.getItem("ctrl_command_i2c_command_read").shiftDataToMask(read)
+  raw_register = fc7AddrTable.getItem("ctrl_command_i2c_command_register").shiftDataToMask(register_address)
+  raw_data = fc7AddrTable.getItem("ctrl_command_i2c_command_data").shiftDataToMask(data)
 
   cmd = raw_command + raw_hybrid_id + raw_chip_id + raw_use_mask + raw_page + raw_read + raw_register + raw_data;
 
@@ -31,7 +31,7 @@ def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read, register_
 
   #print hex(cmd)
 
-  fc7.write("ctrl_i2c_command_fifo", cmd)
+  fc7.write("ctrl_command_i2c_command_fifo", cmd)
   return description
 
 # Send command ctrl
@@ -39,7 +39,7 @@ def SendCommand_CTRL(name = "none"):
     if name == "none":
         print "Sending nothing"
     elif name == "global_reset":
-	fc7.write("ctrl_global_reset", 1)
+	fc7.write("ctrl_command_global_reset", 1)
     elif name == "reset_trigger":
 	fc7.write("ctrl_fast_reset", 1)
     elif name == "start_trigger":
@@ -49,9 +49,9 @@ def SendCommand_CTRL(name = "none"):
     elif name == "load_config":
 	fc7.write("ctrl_fast_load_config", 1)
     elif name == "reset_i2c":
-	fc7.write("ctrl_i2c_reset", 1)
+	fc7.write("ctrl_command_i2c_reset", 1)
     elif name == "reset_i2c_fifos":
-	fc7.write("ctrl_i2c_reset_fifos", 1)
+	fc7.write("ctrl_command_i2c_reset_fifos", 1)
     elif name == "fast_orbit_reset":
 	fc7.write("ctrl_fast_signal_orbit_reset", 1)
     elif name == "fast_fast_reset":
@@ -78,7 +78,7 @@ def Configure_Fast(triggers_to_accept, user_frequency, source, stubs_mask):
 
 # Configure I2C
 def Configure_I2C(mask):
-  fc7.write("cnfg_i2c", fc7AddrTable.getItem("cnfg_i2c_mask").shiftDataToMask(mask))
+  fc7.write("cnfg_command_i2c", fc7AddrTable.getItem("cnfg_command_i2c_mask").shiftDataToMask(mask))
   SendCommand_CTRL("reset_i2c")
   SendCommand_CTRL("reset_i2c_fifos")
 
@@ -107,16 +107,16 @@ def ReadStatus(name = "Current Status"):
   print "   -> trigger state:", temp_state_name
   print "   -> trigger configured:", fc7.read("stat_fast_fsm_configured")
   print	"   -> --------------------------------"
-  print "   -> i2c commands fifo empty:", fc7.read("stat_i2c_fifo_commands_empty")
-  print "   -> i2c replies fifo empty:", fc7.read("stat_i2c_fifo_replies_empty")
-  print "   -> i2c nreplies available:", fc7.read("stat_i2c_nreplies_present")
-  print "   -> i2c fsm state:", fc7.read("stat_i2c_fsm")
+  print "   -> i2c commands fifo empty:", fc7.read("stat_command_i2c_fifo_commands_empty")
+  print "   -> i2c replies fifo empty:", fc7.read("stat_command_i2c_fifo_replies_empty")
+  print "   -> i2c nreplies available:", fc7.read("stat_command_i2c_nreplies_present")
+  print "   -> i2c fsm state:", fc7.read("stat_command_i2c_fsm")
   print "============================"
 
 def CheckClockFrequencies():
   print "IPBus Clock Rate: ", fc7.read("stat_rate_ipb")/10000.0, "MHz"
   print "40MHz Clock Rate: ", fc7.read("stat_rate_40mhz")/10000.0, "MHz"
-  print "User Clock Rate: ", fc7.read("stat_rate_user")/10.0, "KHz"
+  print "Trigger Rate: ", fc7.read("stat_rate_trigger")/10.0, "KHz"
 
 def DataFromMask(data, mask_name):
   return fc7AddrTable.getItem(mask_name).shiftDataFromMask(data)
@@ -127,11 +127,11 @@ def ReadChipData():
   print "   | Hybrid ID             || Chip ID             || DATA         |"
   print "   ================================================================"
 
-  while fc7.read("stat_i2c_fifo_replies_empty") == 0:
-      reply = fc7.read("ctrl_i2c_reply_fifo")
-      hybrid_id = DataFromMask(reply, "ctrl_i2c_reply_hybrid_id")
-      chip_id = DataFromMask(reply, "ctrl_i2c_reply_chip_id")
-      data = DataFromMask(reply, "ctrl_i2c_reply_data")
+  while fc7.read("stat_command_i2c_fifo_replies_empty") == 0:
+      reply = fc7.read("ctrl_command_i2c_reply_fifo")
+      hybrid_id = DataFromMask(reply, "ctrl_command_i2c_reply_hybrid_id")
+      chip_id = DataFromMask(reply, "ctrl_command_i2c_reply_chip_id")
+      data = DataFromMask(reply, "ctrl_command_i2c_reply_data")
       #print bin(fc7.read("ctrl_i2c_command_fifo"))
       #print bin(reply)[4:12]
       print '   | %s %-12i || %s %-12i || %-12s |' % ("Hybrid #", hybrid_id, "Chip #", chip_id, hex(data)[:4])

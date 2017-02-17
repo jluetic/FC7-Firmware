@@ -7,6 +7,7 @@
          <top_modules>
             <top_module name="glbl" />
             <top_module name="ipbus" />
+            <top_module name="register_map_package" />
             <top_module name="sim_usr_general" />
             <top_module name="system_package" />
             <top_module name="user_package" />
@@ -15,13 +16,13 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="14400000000fs"></ZoomStartTime>
-      <ZoomEndTime time="15746000001fs"></ZoomEndTime>
-      <Cursor1Time time="15080000000fs"></Cursor1Time>
+      <ZoomStartTime time="24375000000fs"></ZoomStartTime>
+      <ZoomEndTime time="58125000001fs"></ZoomEndTime>
+      <Cursor1Time time="38500000000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="201"></NameColumnWidth>
-      <ValueColumnWidth column_width="108"></ValueColumnWidth>
+      <ValueColumnWidth column_width="106"></ValueColumnWidth>
    </column_width_setting>
    <WVObjectSize size="6" />
    <wvobject type="logic" fp_name="/sim_usr_general/clk_40MHz_p">
@@ -41,47 +42,25 @@
       <obj_property name="ElementShortName">ipb_mosi_i[0:2]</obj_property>
       <obj_property name="ObjectShortName">ipb_mosi_i[0:2]</obj_property>
       <obj_property name="label">ipb_requests</obj_property>
-      <wvobject type="array" fp_name="/sim_usr_general/ipb_mosi_i[0]">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">[0]</obj_property>
-         <obj_property name="ObjectShortName">[0]</obj_property>
-         <obj_property name="label">cnfg</obj_property>
-      </wvobject>
-      <wvobject type="array" fp_name="/sim_usr_general/ipb_mosi_i[1]">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">[1]</obj_property>
-         <obj_property name="ObjectShortName">[1]</obj_property>
-         <obj_property name="label">ctrl</obj_property>
-      </wvobject>
-      <wvobject type="array" fp_name="/sim_usr_general/ipb_mosi_i[2]">
-         <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="ElementShortName">[2]</obj_property>
-         <obj_property name="ObjectShortName">[2]</obj_property>
-         <obj_property name="label">stat</obj_property>
-      </wvobject>
    </wvobject>
    <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o">
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="ElementShortName">ipb_miso_o[0:2]</obj_property>
       <obj_property name="ObjectShortName">ipb_miso_o[0:2]</obj_property>
       <obj_property name="label">ipb_answers</obj_property>
+      <obj_property name="isExpanded"></obj_property>
       <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o[0]">
-         <obj_property name="DisplayName">label</obj_property>
          <obj_property name="ElementShortName">[0]</obj_property>
          <obj_property name="ObjectShortName">[0]</obj_property>
-         <obj_property name="label">cnfg</obj_property>
       </wvobject>
       <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o[1]">
-         <obj_property name="DisplayName">label</obj_property>
          <obj_property name="ElementShortName">[1]</obj_property>
          <obj_property name="ObjectShortName">[1]</obj_property>
-         <obj_property name="label">ctrl</obj_property>
+         <obj_property name="isExpanded"></obj_property>
       </wvobject>
       <wvobject type="array" fp_name="/sim_usr_general/ipb_miso_o[2]">
-         <obj_property name="DisplayName">label</obj_property>
          <obj_property name="ElementShortName">[2]</obj_property>
          <obj_property name="ObjectShortName">[2]</obj_property>
-         <obj_property name="label">stat</obj_property>
       </wvobject>
    </wvobject>
    <wvobject type="group" fp_name="group87">
@@ -111,6 +90,11 @@
       <wvobject type="logic" fp_name="/sim_usr_general/i2c_read_fifo">
          <obj_property name="ElementShortName">i2c_read_fifo</obj_property>
          <obj_property name="ObjectShortName">i2c_read_fifo</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/sim_usr_general/usr/fast_command_block/fast_signal">
+         <obj_property name="ElementShortName">fast_signal</obj_property>
+         <obj_property name="ObjectShortName">fast_signal</obj_property>
+         <obj_property name="isExpanded"></obj_property>
       </wvobject>
    </wvobject>
 </wave_config>

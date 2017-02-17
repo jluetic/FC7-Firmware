@@ -92,10 +92,9 @@ begin
     stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
     
     -- status
-    stat_fastblock_o.trigger_status(7 downto 6) <= "00";
-    stat_fastblock_o.trigger_status(5)          <= configured;
-    stat_fastblock_o.trigger_status(4)          <= status_state;
-    stat_fastblock_o.trigger_status(3 downto 0) <= status_source;
+    stat_fastblock_o.if_configured          <= configured;
+    stat_fastblock_o.trigger_state          <= status_state;
+    stat_fastblock_o.trigger_source <= status_source;
 
 --===================================--
 clk_divider: entity work.clock_divider

@@ -24,6 +24,7 @@ package user_package is
 	
 
 	type array_8x8bit  is array  (0 to  7) of std_logic_vector(7 downto 0);
+	type sel_size_type  is array (0 to 15) of integer range 0 to 256;
 
 	-- The signals going from master to slaves
   	type cmd_wbus is
@@ -102,8 +103,9 @@ package user_package is
     
     type stat_fastblock_type is
     record
-        -- trigger status register output (3-0 - source, 4 - state, 5 - configured)
-        trigger_status        : std_logic_vector(7 downto 0);
+        trigger_source        : std_logic_vector(3 downto 0);
+        trigger_state         : std_logic;
+        if_configured         : std_logic;
         -- fast command block error
         error_code            : std_logic_vector(7 downto 0);
     end record;

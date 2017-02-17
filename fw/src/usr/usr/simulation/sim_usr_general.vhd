@@ -105,13 +105,13 @@ architecture Behavioral of sim_usr_general is
         variable address    : std_logic_vector(31 downto 0);
     begin  
         if(ipb_command_type_i = global_sel) then
-            address := x"40000200";      
+            address := x"4002_1000";      
         elsif ipb_command_type_i = i2c_write then
-            address := x"40000240";
+            address := x"4002_1002";
         elsif ipb_command_type_i = i2c_read then
-            address := x"40000250";
+            address := x"4002_1003";
         elsif ipb_command_type_i = fast then
-            address := x"40000201";
+            address := x"4002_2000";
         end if;
     return address;
     end ctrl_address;   
@@ -424,13 +424,13 @@ begin
         --=======================--
         
         -- trigger source line
-        ipb_cnfg_addr  <= x"40000128";
+        ipb_cnfg_addr  <= x"4002_2002";
         -- 1 - l1, 2 - stubs, 3 - user-defined
         ipb_cnfg_wdata <= x"00000003";
         send_ipb_cnfg_strobe;
         
         -- trigger frequency line
-        ipb_cnfg_addr  <= x"40000124";
+        ipb_cnfg_addr  <= x"4002_2001";
         -- 1MHz
         ipb_cnfg_wdata <= x"000003E8";
         send_ipb_cnfg_strobe;
