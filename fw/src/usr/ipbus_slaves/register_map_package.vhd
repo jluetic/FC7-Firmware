@@ -47,7 +47,7 @@ function calculate_total_width_stat return integer;
                                                                  
                                 
 --================================================================================================================================================--
--- Set register sizes here
+-- Set amount of allocated registers here
 --================================================================================================================================================--
 constant fc7_register_map : register_map :=
     (0  => ( register_width_cnfg =>  0,      register_width_ctrl =>  0,      register_width_stat =>  2,      block_name  =>  "global__" ),
