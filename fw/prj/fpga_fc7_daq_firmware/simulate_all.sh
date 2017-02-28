@@ -10,8 +10,8 @@ if [ -d "./fpga_fc7_daq_firmware/" ]; then
 		vivado -mode batch -nolog -nojournal -source create_simulation_general.tcl ./fpga_fc7_daq_firmware/fpga_fc7_daq_firmware.xpr
 	fi
 	cd ./fpga_fc7_daq_firmware/simulation_console_all/xsim
-	bash ./sim_general.sh -reset_run
-	bash ./sim_general.sh
+	bash ./sim_usr_general.sh -reset_run
+	bash ./sim_usr_general.sh
 
 	rm ./*.backup.log
 	echo -e "${RED}"
