@@ -169,11 +169,6 @@ architecture usr of user_core is
     --===================================--
     -- Command Processor Block Signals
     --===================================--
-    
-    
-    signal mmcm_ready :std_logic;
-    
-    
     signal cmd_reply : cmd_rbus;
     signal stub_to_hb : stub_data_to_hb_t_array(0 to NUM_HYBRIDS-1);
     signal trig_data_to_hb : triggered_data_frame_r_array(0 to NUM_HYBRIDS-1);
@@ -216,6 +211,9 @@ architecture usr of user_core is
       value    : OUT STD_LOGIC_VECTOR(31 DOWNTO 0));
     END COMPONENT clkRateTool32;
 
+    --===================================--
+    -- Physical Interface Block Signals
+    --===================================--
     signal scl_io  : std_logic_vector(0 to NUM_HYBRIDS-1);
     signal sda_io  : std_logic_vector(0 to NUM_HYBRIDS-1);
     
@@ -229,6 +227,8 @@ architecture usr of user_core is
     signal phase_shift_en : std_logic;
     signal phase_shift_incdec : std_logic;
     signal phase_shift_done : std_logic;
+    signal mmcm_ready :std_logic;
+    --===================================--
     
     attribute keep: boolean;
     attribute keep of clk_320MHz: signal is true;
@@ -372,11 +372,13 @@ begin
        locked => mmcm_ready            
     );
      
-     CBC3_emulator : entity work.CBC3_generator
-     port map(
-
+     
+    cbc3emulator_generation: if EMULATE_CBC3 generate 
+    CBC3_emulator : entity work.CBC3_generator
+    port map(
+        
         reset_i => ipb_global_reset,
- 
+        
         clk320_i =>  clk_320MHz,
         cmd_fast_i => cmd_fast,
         trig_data_o => trigger_data_fromCBC,
@@ -385,7 +387,8 @@ begin
         sda_mosi_i_top => sda_mosi,
         scl_i => scl_mosi,
         mmcm_ready_i => mmcm_ready
-   );
+    );
+    end generate;
    
     phy_block: entity work.phy_core
     port map
@@ -423,11 +426,10 @@ begin
         sda_miso_i => sda_miso,
         sda_mosi_o => sda_mosi,
         scl_o => scl_mosi,
-        mmcm_ready_i => mmcm_ready
-
-        
---        scl_io => scl_io,
---        sda_io => sda_io
+        mmcm_ready_i => mmcm_ready,
+                
+        scl_io => scl_io,
+        sda_io => sda_io
     );
     
 --    usrled2_g <=  trig_data_to_hb(0).channels(0);       

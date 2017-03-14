@@ -44,6 +44,10 @@ entity buffers is
     clk320_n_o     : out std_logic;
     clk320_i       : in std_logic;
     
+    clk40_p_o      : out std_logic;
+    clk40_n_o      : out std_logic;
+    clk40_i        : in std_logic;
+    
     fast_cmd_p_o     : out std_logic;
     fast_cmd_n_o     : out std_logic;
     fast_cmd_i       : in std_logic ;   
@@ -65,10 +69,11 @@ end buffers;
 
 architecture Behavioral of buffers is
     signal clk320_i_oddr : std_logic;
+    signal clk40_i_oddr : std_logic;
 begin
 
     GEN_CBC: for I in 0 to NUM_CHIPS-1 generate
-        GEN_dps : for J in 0 to 5 generate
+        GEN_dps : for J in 0 to number_of_lines_from_cbc(CBC_VERSION)-1 generate
             CBC_ibufds :  ibufds
             generic map(
                 diff_term       => true,
@@ -81,33 +86,67 @@ begin
                 o               => CBC_dp_o(I)(J)
             );
         end generate GEN_dps;
-    end generate GEN_CBC;        
-
-    clk320_oddr : oddr
-    generic map(
-        ddr_clk_edge    => "opposite_edge",
-        init            => '0',
-        srtype          => "sync"
-    )
-    port map (
-        q               => clk320_i_oddr,
-        c               => clk320_i,
-        ce              => '1',
-        d1              => '1',
-        d2              => '0',
-        r               => '0',
-        s               => '0'
-    );
+    end generate GEN_CBC;
     
-    clk320_obufds : obufds
-    generic map(
-        iostandard  => "lvds_25"
-    )
-    port map (
-        i           => clk320_i_oddr,
-        o           => clk320_p_o,
-        ob          => clk320_n_o
-    );
+    out_40MHz_gen: if CBC_VERSION = 2 generate        
+
+        clk40_oddr : oddr
+        generic map(
+            ddr_clk_edge    => "opposite_edge",
+            init            => '0',
+            srtype          => "sync"
+        )
+        port map (
+            q               => clk40_i_oddr,
+            c               => clk40_i,
+            ce              => '1',
+            d1              => '1',
+            d2              => '0',
+            r               => '0',
+            s               => '0'
+        );
+        
+        clk40_obufds : obufds
+        generic map(
+            iostandard  => "lvds_25"
+        )
+        port map (
+            i           => clk40_i_oddr,
+            o           => clk40_p_o,
+            ob          => clk40_n_o
+        );
+    
+    end generate out_40MHz_gen;
+    
+    out_320MHz_gen: if CBC_VERSION = 3 generate        
+
+        clk320_oddr : oddr
+        generic map(
+            ddr_clk_edge    => "opposite_edge",
+            init            => '0',
+            srtype          => "sync"
+        )
+        port map (
+            q               => clk320_i_oddr,
+            c               => clk320_i,
+            ce              => '1',
+            d1              => '1',
+            d2              => '0',
+            r               => '0',
+            s               => '0'
+        );
+        
+        clk320_obufds : obufds
+        generic map(
+            iostandard  => "lvds_25"
+        )
+        port map (
+            i           => clk320_i_oddr,
+            o           => clk320_p_o,
+            ob          => clk320_n_o
+        );
+    
+    end generate out_320MHz_gen;
     
     
     fast_cmd_obufds : obufds

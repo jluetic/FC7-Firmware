@@ -54,8 +54,8 @@ entity phy_core is
         cmd_reply_o         : out cmd_rbus;
         
         -- slow control lines
---        scl_io              : inout std_logic_vector(0 to NUM_HYBRID-1);
---        sda_io              : inout std_logic_vector(0 to NUM_HYBRID-1)
+        scl_io              : inout std_logic_vector(0 to NUM_HYBRIDS-1);
+        sda_io              : inout std_logic_vector(0 to NUM_HYBRIDS-1);
 
         -- temporary slow control to use with emulator
         sda_miso_i : in std_logic_vector(0 to NUM_HYBRIDS-1);
@@ -80,6 +80,9 @@ architecture rtl of phy_core is
     signal sda_miso : std_logic_vector(0 to NUM_HYBRIDS-1) := (others => '1');
     signal sda_tri : std_logic_vector(0 to NUM_HYBRIDS-1) := (others => '1');
     
+    -- serial fast command internal
+    signal cmd_fast_int             : std_logic;
+    
     -- buffers
     signal cbc_dp_to_buf : cbc_dp_to_buf_array_array(0 to NUM_HYBRIDS-1);
 
@@ -91,11 +94,13 @@ architecture rtl of phy_core is
     
 begin
 
-
+    cmd_fast_o <= cmd_fast_int;
     
-    sda_mosi_o <= sda_mosi;
-    sda_miso <= sda_miso_i;
-    scl_o <= scl_mosi ;
+    gen_emulate_i2c_lines: if (EMULATE_CBC3) generate
+        sda_mosi_o <= sda_mosi;
+        sda_miso <= sda_miso_i;
+        scl_o <= scl_mosi ;
+    end generate gen_emulate_i2c_lines;
     
     --== fast command block ==--
     fast_cmd_inst: entity work.fast_cmd_block
@@ -104,7 +109,7 @@ begin
         clk320 => clk_320_i,
         reset_i => reset_i,
         fast_cmd_i => cmd_fast_i,
-        fast_cmd_o => cmd_fast_o,
+        fast_cmd_o => cmd_fast_int,
         mmcm_ready_i => mmcm_ready_i
     );
 
@@ -160,35 +165,41 @@ begin
     end generate gen_stub_data_readout;
     
     --everything is happening inside the FPGA for now
+    if_gen_buffers: if (NOT EMULATE_CBC3) generate
     --== buffers ==---
---    gen_buffers: for index in 0 to NUM_HYBRID-1 generate
---        buffers_inst : entity work.buffers
---        Port map (       
---            CBC_dp_p_i => cbc_dp_to_buf(index),
---            CBC_dp_n_i => cbc_dp_to_buf(index),
+    gen_buffers: for index in 0 to NUM_HYBRIDS-1 generate
+        buffers_inst : entity work.buffers
+        Port map (       
+            CBC_dp_p_i => cbc_dp_to_buf(index),
+            CBC_dp_n_i => cbc_dp_to_buf(index),
             
---            CBC_dp_o => open,
+            CBC_dp_o => open,
             
---            clk320_p_o  => open,
---            clk320_n_o  => open,
---            clk320_i    => '0',
+            clk320_p_o  => open,
+            clk320_n_o  => open,
+            clk320_i    => '0',
             
---            fast_cmd_p_o     => cmd_fast_o,
---            fast_cmd_n_o     => open,
---            fast_cmd_i       => fast_cmd,   
+            clk40_p_o  => open,
+            clk40_n_o  => open,
+            clk40_i    => '0',
+            
+            fast_cmd_p_o     => open,
+            fast_cmd_n_o     => open,
+            fast_cmd_i       => cmd_fast_int,   
         
---            reset_o          => reset_o,
---            reset_i          => reset_i,
+            reset_o          => reset_o,
+            reset_i          => reset_i,
             
---            SCL_i  => scl_mosi(index),
---            --SCL_o            : out std_logic; only the master drives the scl clock right now
---            SCL_io => scl_io(index),
+            SCL_i  => scl_mosi(index),
+            --SCL_o            : out std_logic; only the master drives the scl clock right now
+            SCL_io => scl_io(index),
                
---            SDA_io => sda_io(index),
---            SDA_mosi_i => sda_mosi(index),
---            SDA_miso_o => sda_miso(index),
---            SDA_tri_i => sda_tri(index)        
---        );
---    end generate gen_buffers;
+            SDA_io => sda_io(index),
+            SDA_mosi_i => sda_mosi(index),
+            SDA_miso_o => sda_miso(index),
+            SDA_tri_i => sda_tri(index)        
+        );
+    end generate gen_buffers;
+    end generate;
     
 end rtl;

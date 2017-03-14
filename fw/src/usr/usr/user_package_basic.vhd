@@ -11,9 +11,26 @@ package user_package is
 	constant user_ipb_stat_regs		: integer  := 0 ;
 	constant user_ipb_ctrl_regs		: integer  := 1 ;
 
+    --===================================--
+    -- FMC Config
+    --===================================--
+    -- fmc connection enum type (enumarates, which hardware can be connected to the FMC)
+    type fmc_hardware_type is (FMC_DIO5, FMC_2CBC2, FMC_8CBC2, FMC_2CBC3, FMC_OPTO_QUAD);
+    -- specifies, what's connected to the FMC1 (l12)
+    constant FMC1                   : fmc_hardware_type := FMC_8CBC2;
+    -- specifies, what's connected to the FMC2 (l8)
+    constant FMC2                   : fmc_hardware_type := FMC_DIO5;
+    --===================================--
+    constant EMULATE_CBC3           : boolean := true;
+    
+    -- 2 for CBC2, 3 for CBC3 (be careful!!!)
+    constant CBC_VERSION            : integer := 3;     
 
     constant NUM_HYBRIDS            : integer := 2;
-    constant NUM_CHIPS              : integer := 2;    
+    constant NUM_CHIPS              : integer := 2;
+    
+    -- this function helps to create a proper ammount of buffers and lines
+    function number_of_lines_from_cbc(cbc_version_i: in integer) return integer;    
 
     --=== slow control records ===--
 	-- The signals going from master to slaves
@@ -76,7 +93,7 @@ package user_package is
     --===== stub data lines  =====--
     --============================--   
     --== differential pairs to buffer ==--
-    subtype cbc_dp_to_buf is std_logic_vector(5 downto 0);
+    subtype cbc_dp_to_buf is std_logic_vector(number_of_lines_from_cbc(CBC_VERSION)-1 downto 0);
     type cbc_dp_to_buf_array is array(0 to NUM_CHIPS-1) of cbc_dp_to_buf;
     type cbc_dp_to_buf_array_array is array(natural range <>) of cbc_dp_to_buf_array;
     
@@ -225,7 +242,24 @@ package user_package is
         fifo_statuses          : fifo_stat;
     end record;
     
+    
 end user_package;
    
 package body user_package is
+
+    function number_of_lines_from_cbc(cbc_version_i: in integer) return integer is
+        variable nlines : integer;
+    begin
+    
+        if cbc_version_i = 2 then
+            nlines := 2;
+        elsif cbc_version_i = 3 then
+            nlines := 6;
+        else
+            nlines := 1;
+        end if;
+        
+        return nlines;
+    end number_of_lines_from_cbc;
+
 end user_package;
