@@ -169,25 +169,41 @@ def I2CTester():
 	## i2c config #
 	###############
 	# command_i2c: 0 - send command to certain hybrid/chip, 1 - send command to all chips on hybrid, 2 - send command to all chips on all hybrids
-	command_i2c = 1
-	hybrid_id = 0
-	chip_id = 4
+	#command_i2c = 0
+	#hybrid_id = 0
+	#chip_id = 0
 	# mask has to be configured with Configure_I2C(--mask--) command, then used or not used using the paramter below
 	use_mask = 0
-	page = 1
+	#page = 0
 	# 0 - write, 1 - read
+	write = 0
 	read = 1
-	register = 23
-	data = 15
+	#register = 2
+	#data = 7
 	################
 	
 	ReadStatus("Before I2C Configuration")
 	Configure_I2C(255)
 	ReadStatus("After I2C Configuration")
 
-	SendCommand_I2C(command_i2c, hybrid_id, chip_id, use_mask, page, read, register, data)
+	num_i2c_registersPage1 = 35
+	num_i2c_registersPage2 = 2
+       #                       i2c_command , hybrid_id ,  chip_id, use_mask, page , read , register_address , data;
+
+	for i in range(0, num_i2c_registersPage1):
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
+	for i in range(0, num_i2c_registersPage2):
+		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
+	for i in range(1, num_i2c_registersPage1):
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, write,       i,    5)
+	for i in range(1, num_i2c_registersPage2):
+		SendCommand_I2C(          2,         0,       15, use_mask,    1, write,       i,    7)
+	for i in range(0, num_i2c_registersPage1):
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
+	for i in range(0, num_i2c_registersPage2):
+		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
 	
-	sleep(1)
+	sleep(5)
 
 	ReadStatus("After Send Command")
 	ReadChipData()
@@ -197,7 +213,7 @@ def I2CTester():
 ## Program Running #
 ####################
 SendCommand_CTRL("global_reset")
-sleep(0.5)
+sleep(1)
 
 # to test I2C Commands (see method definition)
 I2CTester()
@@ -211,4 +227,4 @@ I2CTester()
 #SendCommand_CTRL("fast_fast_reset")
 #SendCommand_CTRL("fast_test_pulse")
 
-CheckClockFrequencies()
+#CheckClockFrequencies()

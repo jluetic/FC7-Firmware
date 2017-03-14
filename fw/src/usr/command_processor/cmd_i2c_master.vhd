@@ -126,10 +126,10 @@ begin
             
         when SendCommand =>
             i2c_fsm_status <= x"3";
- 
+            --command_fifo_read_next_o <= '0'; --REMOVE
             -- setting register value to a certain hybrid,chip
             if command_type = x"0" then
-                    if(TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS) or (TO_INTEGER(unsigned(chip_id))+1>NUM_CHIPS) then
+                    if(((TO_INTEGER(unsigned(hybrid_id))+1>NUM_HYBRIDS) or (TO_INTEGER(unsigned(chip_id))+1>NUM_CHIPS)) and chip_id /= "1111") then
                         -- wrong hybrid or chip id
                         error_code <= x"23";
                         i2c_fsm_state <= Finished;

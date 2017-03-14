@@ -12,6 +12,8 @@ use work.user_version_package.all;
 library unisim;
 use unisim.vcomponents.all;
 
+use work.cbc3_emulator_package.all;
+
 entity user_core is 
 port
 (
@@ -154,6 +156,7 @@ architecture usr of user_core is
     signal fabric_clk               : std_logic;
     signal clk_160Mhz               : std_logic;
     signal clk_40Mhz                : std_logic;
+    signal clk_40MHz_fromBUFG                : std_logic;
     signal clk_40Mhz_nobuf          : std_logic;
     signal clk_320Mhz               : std_logic;
     signal clk_user                 : std_logic;    
@@ -166,6 +169,14 @@ architecture usr of user_core is
     --===================================--
     -- Command Processor Block Signals
     --===================================--
+    
+    
+    signal mmcm_ready :std_logic;
+    
+    
+    signal cmd_reply : cmd_rbus;
+    signal stub_to_hb : stub_data_to_hb_t_array(0 to NUM_HYBRIDS-1);
+    signal trig_data_to_hb : triggered_data_frame_r_array(0 to NUM_HYBRIDS-1);
     -- control of command processor block
     signal cnfg_command_block               : cnfg_command_block_type;
     signal ctrl_command_block_from_ipbus    : ctrl_command_block_from_ipbus_type;
@@ -205,6 +216,22 @@ architecture usr of user_core is
       value    : OUT STD_LOGIC_VECTOR(31 DOWNTO 0));
     END COMPONENT clkRateTool32;
 
+    signal scl_io  : std_logic_vector(0 to NUM_HYBRIDS-1);
+    signal sda_io  : std_logic_vector(0 to NUM_HYBRIDS-1);
+    
+    signal cmd_fast : std_logic;
+    signal trigger_data_fromCBC : trig_data_from_fe_t_array(0 to NUM_HYBRIDS-1);
+    signal stub_data_fromCBC : stub_lines_r_array_array(0 to NUM_HYBRIDS-1);
+    
+    signal sda_miso : std_logic_vector(0 to NUM_HYBRIDS-1);
+    signal sda_mosi : std_logic_vector(0 to NUM_HYBRIDS-1);
+    signal scl_mosi : std_logic_vector(0 to NUM_HYBRIDS-1);
+    signal phase_shift_en : std_logic;
+    signal phase_shift_incdec : std_logic;
+    signal phase_shift_done : std_logic;
+    
+    attribute keep: boolean;
+    attribute keep of clk_320MHz: signal is true;
 begin
 
     --===========================================--
@@ -213,7 +240,7 @@ begin
 	ipb_clk 		      <= clk_31_250_bufg_i; 	-- select the frequency of the ipbus clock 
 	ipb_clk_o 	          <= ipb_clk;				-- always forward the selected ipb_clk to system core
     --
-	ip_addr_o 	          <= x"c0_a8_01_50";
+	ip_addr_o 	          <= x"c0_a8_00_50";
 	mac_addr_o	          <= x"aa_bb_cc_dd_ee_50";
 	rarp_en_o 		      <= '1';
 	use_i2c_eeprom_o      <= '1';
@@ -225,7 +252,7 @@ begin
     fclk_ibuf:      ibufgds     port map (i => fabric_clk_p, ib => fabric_clk_n, o => fabric_clk_pre_buf);
     fclk_bufg:      bufg        port map (i => fabric_clk_pre_buf,               o => fabric_clk);
     
-    clk_40MHz <= fabric_clk;
+    clk_40MHz_fromBUFG <= fabric_clk;
     --===========================================--
     -- CLK 40MHz
     --===========================================--
@@ -264,7 +291,7 @@ begin
     --===================================--
     port map
     (
-        clk_40MHz       => clk_40MHz,
+        clk_40MHz       => clk_40MHz_fromBUFG,
         ipb_clk         => ipb_clk,
         reset           => ipb_global_reset,     
         -- controls from ipbus
@@ -278,11 +305,11 @@ begin
         i2c_reply       => i2c_reply        
     );        
     --===================================--    
-    phy_answer_generator: entity work.answer_block
-        port map ( clk              => clk_40MHz,
-                   i2c_request      => i2c_request,
-                   i2c_reply        => i2c_reply);
-    
+    --phy_answer_generator: entity work.answer_block
+    --    port map ( clk              => clk_40MHz,
+    --               i2c_request      => i2c_request,
+    --               i2c_reply        => i2c_reply);
+    --
     --===================================--
     -- Fast commands. Connected to: physical interface, hybrids.
     --===================================--
@@ -290,7 +317,7 @@ begin
     --===================================--
     port map
     (
-        clk_40Mhz               => clk_40MHz,
+        clk_40Mhz               => clk_40MHz_fromBUFG,
         l1_trigger_in           => '0',
         reset                   => ipb_global_reset,
         -- control buses from Command Processor Block
@@ -325,15 +352,88 @@ begin
     --===================================--
     -- Physical interface layer. Connected to: hybrids (40mhz lines + I2C lines), fast commands, FMC 1&2
     --===================================--
-    phy_block: entity work.phy_core;
-    --===================================--
-    --generic map
-    --(
-    --)
-    --port map
-    --(
-    --);        
-    --===================================--
+    -- temporary mmcm for 320 and 40 MHz clocks, now the 40MHz fabric clock is still used in all the block. It is more stable like this
+    mmcm_inst : entity work.mmcm
+    port map ( 
+  
+       -- Clock in ports
+       clk_in1 => fabric_clk_pre_buf,
+      -- Clock out ports  
+       clk_out40 => clk_40MHz,
+       clk_out320 => clk_320MHz,
+       clk_out3 => open,
+--       clk_out3 => clk_320MHz_Phase_Shifted,
+--       psClk => clk_320MHz,
+--       psEn => '0',
+--       psIncDec => '1',
+--       psDone => phase_shift_done,
+      -- Status and control signals                
+       reset => '0',
+       locked => mmcm_ready            
+    );
+     
+     CBC3_emulator : entity work.CBC3_generator
+     port map(
+
+        reset_i => ipb_global_reset,
+ 
+        clk320_i =>  clk_320MHz,
+        cmd_fast_i => cmd_fast,
+        trig_data_o => trigger_data_fromCBC,
+        stub_data_o => stub_data_fromCBC,
+        sda_miso_o_top => sda_miso,
+        sda_mosi_i_top => sda_mosi,
+        scl_i => scl_mosi,
+        mmcm_ready_i => mmcm_ready
+   );
+   
+    phy_block: entity work.phy_core
+    port map
+    (
+        clk_40              => clk_40MHz_fromBUFG, 
+        clk_320_i           => clk_320MHz,
+       
+        reset_i             => ipb_global_reset,
+
+        -- fast command input bus
+        cmd_fast_i          => fast_signal_to_phy,
+    
+        -- fast command serial output
+        cmd_fast_o          => cmd_fast, 
+
+        -- hybrid block interface for triggered data
+        trig_data_o         => trig_data_to_hb,
+
+        -- hybrid block interface for stub data
+        stub_data_o         => stub_to_hb,
+    
+        -- triggered data lines from CBC
+        trig_data_i         => trigger_data_fromCBC,
+
+        -- stubs lines from CBC
+        stub_data_i         => stub_data_fromCBC,
+    
+        -- slow control command from command generator
+        cmd_request_i       => i2c_request,
+    
+        -- slow control response to command generator
+        cmd_reply_o         => i2c_reply,
+        
+        -- temporary lines to use with the emulator
+        sda_miso_i => sda_miso,
+        sda_mosi_o => sda_mosi,
+        scl_o => scl_mosi,
+        mmcm_ready_i => mmcm_ready
+
+        
+--        scl_io => scl_io,
+--        sda_io => sda_io
+    );
+    
+--    usrled2_g <=  trig_data_to_hb(0).channels(0);       
+--    usrled1_g <=  trig_data_to_hb(0).channels(253);       
+--    usrled1_r <=  stub_to_hb(0)(0).sync_bit;       
+--    --===================================--
     
     --===================================--
     -- BE Data Buffer - Contains Global Event Builder. Connected to: hybrids
@@ -357,7 +457,7 @@ begin
     port map
     (   
         clk_ipb               => ipb_clk,
-        clk_40MHz             => clk_40MHz,
+        clk_40MHz             => clk_40MHz_fromBUFG,
         reset                 => ipb_global_reset,
         ipb_mosi_i            => ipb_mosi_i(ipb_daq_system_ctrl_sel),
         ipb_miso_o            => ipb_miso_o(ipb_daq_system_ctrl_sel),
@@ -410,40 +510,40 @@ begin
     --===================================--
     
     
-    clkRate0 : clkRateTool32
-    GENERIC MAP (
-       -- clock rate of clkref in MHz
-        CLKREF_RATE_IN_MHZ => 125
-    )  
-    PORT MAP (
-        clkref   => osc125_a_mgtrefclk_i,
-        clktest  => ipb_clk,
-        clkvalue => ipb_clk,
-        value    => test_clock_frequency(0)
-    );
+--    clkRate0 : clkRateTool32
+--    GENERIC MAP (
+--       -- clock rate of clkref in MHz
+--        CLKREF_RATE_IN_MHZ => 125
+--    )  
+--    PORT MAP (
+--        clkref   => osc125_a_mgtrefclk_i,
+--        clktest  => ipb_clk,
+--        clkvalue => ipb_clk,
+--        value    => test_clock_frequency(0)
+--    );
     
-    clkRate1 : clkRateTool32
-    GENERIC MAP (
-       -- clock rate of clkref in MHz
-        CLKREF_RATE_IN_MHZ => 125
-    )  
-    PORT MAP (
-        clkref   => osc125_a_mgtrefclk_i,
-        clktest  => clk_40MHz,
-        clkvalue => ipb_clk,
-        value    => test_clock_frequency(1)
-    );
+--    clkRate1 : clkRateTool32
+--    GENERIC MAP (
+--       -- clock rate of clkref in MHz
+--        CLKREF_RATE_IN_MHZ => 125
+--    )  
+--    PORT MAP (
+--        clkref   => osc125_a_mgtrefclk_i,
+--        clktest  => clk_40MHz,
+--        clkvalue => ipb_clk,
+--        value    => test_clock_frequency(1)
+--    );
     
-    clkRate2 : clkRateTool32
-        GENERIC MAP (
-           -- clock rate of clkref in MHz
-            CLKREF_RATE_IN_MHZ => 125
-        )  
-        PORT MAP (
-            clkref   => osc125_a_mgtrefclk_i,
-            clktest  => fast_signal_to_phy.trigger,
-            clkvalue => ipb_clk,
-            value    => test_clock_frequency(2)
-        );
+--    clkRate2 : clkRateTool32
+--        GENERIC MAP (
+--           -- clock rate of clkref in MHz
+--            CLKREF_RATE_IN_MHZ => 125
+--        )  
+--        PORT MAP (
+--            clkref   => osc125_a_mgtrefclk_i,
+--            clktest  => fast_signal_to_phy.trigger,
+--            clkvalue => ipb_clk,
+--            value    => test_clock_frequency(2)
+--        );
 
 end usr;
