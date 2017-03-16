@@ -142,7 +142,9 @@ port
 	ip_addr_o						: out	std_logic_vector(31 downto 0);
     mac_addr_o                      : out   std_logic_vector(47 downto 0);
     rarp_en_o                       : out   std_logic;
-    use_i2c_eeprom_o                : out   std_logic
+    use_i2c_eeprom_o                : out   std_logic;
+    fmc_i2c_scl                     : inout std_logic;
+    fmc_i2c_sda                     : inout std_logic
 );
 end user_core;
 
@@ -371,24 +373,6 @@ begin
        reset => '0',
        locked => mmcm_ready            
     );
-     
-     
-    cbc3emulator_generation: if EMULATE_CBC3 generate 
-    CBC3_emulator : entity work.CBC3_generator
-    port map(
-        
-        reset_i => ipb_global_reset,
-        
-        clk320_i =>  clk_320MHz,
-        cmd_fast_i => cmd_fast,
-        trig_data_o => trigger_data_fromCBC,
-        stub_data_o => stub_data_fromCBC,
-        sda_miso_o_top => sda_miso,
-        sda_mosi_i_top => sda_mosi,
-        scl_i => scl_mosi,
-        mmcm_ready_i => mmcm_ready
-    );
-    end generate;
    
     phy_block: entity work.phy_core
     port map
@@ -399,22 +383,13 @@ begin
         reset_i             => ipb_global_reset,
 
         -- fast command input bus
-        cmd_fast_i          => fast_signal_to_phy,
-    
-        -- fast command serial output
-        cmd_fast_o          => cmd_fast, 
-
+        cmd_fast_i          => fast_signal_to_phy,  
+       
         -- hybrid block interface for triggered data
         trig_data_o         => trig_data_to_hb,
 
         -- hybrid block interface for stub data
-        stub_data_o         => stub_to_hb,
-    
-        -- triggered data lines from CBC
-        trig_data_i         => trigger_data_fromCBC,
-
-        -- stubs lines from CBC
-        stub_data_i         => stub_data_fromCBC,
+        stub_data_o         => stub_to_hb,   
     
         -- slow control command from command generator
         cmd_request_i       => i2c_request,
@@ -422,14 +397,13 @@ begin
         -- slow control response to command generator
         cmd_reply_o         => i2c_reply,
         
-        -- temporary lines to use with the emulator
-        sda_miso_i => sda_miso,
-        sda_mosi_o => sda_mosi,
-        scl_o => scl_mosi,
-        mmcm_ready_i => mmcm_ready,
-                
-        scl_io => scl_io,
-        sda_io => sda_io
+        mmcm_ready_i => mmcm_ready,        
+      
+        -- fmc ports
+        fmc_l12_la_p        => fmc_l12_la_p,
+        fmc_l12_la_n        => fmc_l12_la_n,
+        fmc_l8_la_p         => fmc_l8_la_p,
+        fmc_l8_la_n         => fmc_l8_la_n 
     );
     
 --    usrled2_g <=  trig_data_to_hb(0).channels(0);       

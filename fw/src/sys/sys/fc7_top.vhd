@@ -484,7 +484,11 @@ port map
     ip_addr_o                     => ip_addr,                            
     mac_addr_o                    => mac_addr,                            
     use_i2c_eeprom_o              => use_i2c_eeprom,
-    rarp_en_o                     => rarp_en    
+    rarp_en_o                     => rarp_en,
+    
+    --# i2c lines fmc
+    fmc_i2c_scl                   => fmc_i2c_scl,                    
+    fmc_i2c_sda                   => fmc_i2c_sda    
     
 );    
 --==============================--

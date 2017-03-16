@@ -15,19 +15,19 @@ package user_package is
     -- FMC Config
     --===================================--
     -- fmc connection enum type (enumarates, which hardware can be connected to the FMC)
-    type fmc_hardware_type is (FMC_DIO5, FMC_2CBC2, FMC_8CBC2, FMC_2CBC3, FMC_OPTO_QUAD);
+    type fmc_hardware_type is (FMC_NONE, FMC_DIO5, FMC_2CBC2, FMC_8CBC2, FMC_2CBC3, FMC_8CBC3, FMC_OPTO_QUAD);
     -- specifies, what's connected to the FMC1 (l12)
     constant FMC1                   : fmc_hardware_type := FMC_8CBC2;
     -- specifies, what's connected to the FMC2 (l8)
     constant FMC2                   : fmc_hardware_type := FMC_DIO5;
     --===================================--
-    constant EMULATE_CBC3           : boolean := true;
+    constant EMULATE_CBC3           : boolean := false;
     
     -- 2 for CBC2, 3 for CBC3 (be careful!!!)
-    constant CBC_VERSION            : integer := 3;     
+    constant CBC_VERSION            : integer := 2;     
 
-    constant NUM_HYBRIDS            : integer := 2;
-    constant NUM_CHIPS              : integer := 2;
+    constant NUM_HYBRIDS            : integer := 1;
+    constant NUM_CHIPS              : integer := 8;
     
     -- this function helps to create a proper ammount of buffers and lines
     function number_of_lines_from_cbc(cbc_version_i: in integer) return integer;    
@@ -62,6 +62,27 @@ package user_package is
        cmd_err 	            : std_logic;
     end record;
   	type cmd_rbus_array is array(natural range <>) of cmd_rbus;
+  	
+  	--==========================-- 
+    --=== cbc2 control lines ===--
+    --==========================--
+    type control_to_cbc2_dp_type is
+    record
+        clk40_p_o      : std_logic;
+        clk40_n_o      : std_logic;
+                    
+        i2c_refresh_p       : std_logic;
+        i2c_refresh_n       : std_logic;
+        
+        test_pulse_p        : std_logic;
+        test_pulse_n        : std_logic;
+        
+        fast_reset_p        : std_logic;
+        fast_reset_n        : std_logic;
+        
+        l1_trigger_p        : std_logic;
+        l1_trigger_n        : std_logic; 
+    end record;
 
     --============================-- 
     --=== triggered data lines ===--
@@ -93,9 +114,18 @@ package user_package is
     --===== stub data lines  =====--
     --============================--   
     --== differential pairs to buffer ==--
-    subtype cbc_dp_to_buf is std_logic_vector(number_of_lines_from_cbc(CBC_VERSION)-1 downto 0);
+    type cbc_dp_to_buf_single is
+    record
+        p   : std_logic;
+        n   : std_logic;
+    end record;
+    type cbc_dp_to_buf is array(number_of_lines_from_cbc(CBC_VERSION)-1 downto 0) of cbc_dp_to_buf_single;
     type cbc_dp_to_buf_array is array(0 to NUM_CHIPS-1) of cbc_dp_to_buf;
     type cbc_dp_to_buf_array_array is array(natural range <>) of cbc_dp_to_buf_array;
+    
+    subtype cbc_lines_from_buf is std_logic_vector(number_of_lines_from_cbc(CBC_VERSION)-1 downto 0);
+    type cbc_lines_from_buf_array is array(0 to NUM_CHIPS-1) of cbc_lines_from_buf;
+    type cbc_lines_from_buf_array_array is array(natural range <>) of cbc_lines_from_buf_array;
     
     --== stub data from front-end ==--
     type stub_lines_r is
@@ -108,8 +138,10 @@ package user_package is
     end record; 
     --== stub data from front-end array (for mutliple chips) ==--
     type stub_lines_r_array is array(0 to NUM_CHIPS-1) of stub_lines_r;
+    subtype stub_lines_r_cbc2_array is std_logic_vector(0 to NUM_CHIPS-1);
     --== stub data from front-end array (for mutliple hybrids) ==--
     type stub_lines_r_array_array is array(natural range <>) of stub_lines_r_array;
+    type stub_lines_r_cbc2_array_array is array(natural range <>) of stub_lines_r_cbc2_array;
     --== stub data record to hybrid block ==--
     type one_cbc_stubs_r is
     record
@@ -143,6 +175,8 @@ package user_package is
       test_pulse_trigger    : std_logic;
       -- orbit reset bit
       orbit_reset           : std_logic;
+      -- i2c refresh (for cbc2)
+      i2c_refresh           : std_logic;
     end record;
 
    
