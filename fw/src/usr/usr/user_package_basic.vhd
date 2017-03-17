@@ -30,7 +30,11 @@ package user_package is
     constant NUM_CHIPS              : integer := 8;
     
     -- this function helps to create a proper ammount of buffers and lines
-    function number_of_lines_from_cbc(cbc_version_i: in integer) return integer;    
+    function number_of_lines_from_cbc(cbc_version_i: in integer) return integer;  
+    
+    -- address map type for different fmcs
+    type i2c_address_map_type is array (natural range <>) of std_logic_vector(6 downto 0);
+    type i2c_address_map_type_array is array (natural range <>) of i2c_address_map_type(0 to NUM_CHIPS-1);    
 
     --=== slow control records ===--
 	-- The signals going from master to slaves

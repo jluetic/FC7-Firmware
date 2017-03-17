@@ -13,6 +13,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 use work.user_package.ALL;
+use work.fmcio_package.all;
 
 entity phy_core is
     port (    
@@ -94,6 +95,9 @@ architecture rtl of phy_core is
     attribute keep of cmd_fast_to_cbc: signal is true;
     attribute keep of trig_data_o: signal is true;
     
+    -- i2c address map needs to be different for different fmcs
+    signal i2c_address_map:     i2c_address_map_type_array(0 to NUM_HYBRIDS-1);
+    
 begin
 
     --== fast command block ==--
@@ -125,6 +129,7 @@ begin
         port map (
             clk => clk_40,
             reset => reset_i,
+            i2c_address_map => i2c_address_map(index),
             cmd_request => cmd_request(index),
             cmd_reply => cmd_reply(index),
             scl_mosi => scl_mosi(index),        
@@ -200,8 +205,8 @@ begin
         
     end generate gen_readout_cbc3;
     
-    gen_readout_cbc2: if CBC_VERSION = 2 generate
-        
+    gen_readout_cbc2: if CBC_VERSION = 2 generate  
+    
         --== readout real lines ==--
         gen_lines: if (NOT EMULATE_CBC3) generate
           
@@ -238,6 +243,41 @@ begin
         end generate gen_stub_data_readout;
         
     end generate gen_readout_cbc2;
+    
+    --=========================================================--
+    -- I2C Address map generation
+    --=========================================================--
+    -- temporary address map for cbc3;
+    gen_i2c_address_map_cbc3: if CBC_VERSION = 3 generate
+        gen_i2c_address_map_2cbc3: if NUM_CHIPS = 2 generate
+            iteration: for index in 0 to NUM_HYBRIDS-1 generate
+                i2c_address_map(index) <= i2c_address_map_2cbc3;
+            end generate iteration;    
+        end generate gen_i2c_address_map_2cbc3;
+        
+        gen_i2c_address_map_8cbc3: if NUM_CHIPS = 8 generate
+            iteration: for index in 0 to NUM_HYBRIDS-1 generate
+                i2c_address_map(index) <= i2c_address_map_8cbc3;
+            end generate iteration;    
+        end generate gen_i2c_address_map_8cbc3;
+    end generate gen_i2c_address_map_cbc3;
+    
+    -- electrical address map for cbc2;
+    gen_i2c_address_map_cbc2: if CBC_VERSION = 2 generate
+        gen_i2c_address_map_2cbc2: if NUM_CHIPS = 2 generate
+            iteration: for index in 0 to NUM_HYBRIDS-1 generate
+                i2c_address_map(index) <= i2c_address_map_2cbc2;
+            end generate iteration;    
+        end generate gen_i2c_address_map_2cbc2;
+        
+        gen_i2c_address_map_8cbc2: if NUM_CHIPS = 8 generate
+            iteration: for index in 0 to NUM_HYBRIDS-1 generate
+                i2c_address_map(index) <= i2c_address_map_8cbc2;
+            end generate iteration;    
+        end generate gen_i2c_address_map_8cbc2;
+    end generate gen_i2c_address_map_cbc2;
+    --=========================================================--
+    
     
     --===========================================================================--
     -- HERE WE CONNECT TO THE CORRESPONDING FMC's    

@@ -8,7 +8,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
---use IEEE.NUMERIC_STD.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -20,6 +20,7 @@ entity phy_i2c_wrapper is
   port (
     clk: in std_logic;
     reset: in std_logic;
+    i2c_address_map : in i2c_address_map_type(0 to NUM_CHIPS-1);
     cmd_request: in cmd_wbus;
     cmd_reply: out cmd_rbus;    
     scl_mosi : inout std_logic;
@@ -85,7 +86,7 @@ begin
                         cmd_rbus_tmp.cmd_err <= '0'; 
                         if (cmd_request.cmd_strobe = '1') then
                             -- save request parameters
-                            chip_address_req <= "111" & cmd_request.cmd_chip_id; -- need a mapping between CBC id and CBC chip address
+                            chip_address_req <= i2c_address_map(to_integer(unsigned(cmd_request.cmd_chip_id)));
                             rw_req <= cmd_request.cmd_read;
                             page_req <= cmd_request.cmd_page;
                             reg_address_req <= cmd_request.cmd_register;

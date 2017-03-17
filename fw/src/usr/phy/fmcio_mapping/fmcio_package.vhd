@@ -21,6 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use work.user_package.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -151,6 +152,18 @@ constant io_map_8cbc2    : fmcpin_sig_mapset_type :=
     ( fmc_dir => "i",   fmcpin_id   =>  32,  sig_id  =>  fmc_8cbc2_in_id.cbc7_trigdata,    wrong_pol => false ),
     ( fmc_dir => "o",   fmcpin_id   =>  33,  sig_id  =>  fmc_8cbc2_out_id.na,    wrong_pol => false )
 );
+
+constant i2c_address_map_8cbc2: i2c_address_map_type(0 to 7) := 
+(
+    0 =>  "1000001",
+    1 =>  "1000010",
+    2 =>  "1000011",
+    3 =>  "1000100",
+    4 =>  "1000101",
+    5 =>  "1000110",
+    6 =>  "1000111",
+    7 =>  "1001000"
+);
 --====================================--
 
 --====================================--
@@ -183,7 +196,31 @@ record
     reset                : natural;
     na		             : natural;
 end record;
+
+constant i2c_address_map_2cbc2: i2c_address_map_type(0 to 1) := 
+(
+    0 =>  "1000001",
+    1 =>  "1000010"
+);
 --====================================--
+
+constant i2c_address_map_2cbc3: i2c_address_map_type(0 to 1) := 
+(
+    0 =>  "1110000",
+    1 =>  "1110001"
+);
+
+constant i2c_address_map_8cbc3: i2c_address_map_type(0 to 7) := 
+(
+    0 =>  "1000001",
+    1 =>  "1000010",
+    2 =>  "1000011",
+    3 =>  "1000100",
+    4 =>  "1000101",
+    5 =>  "1000110",
+    6 =>  "1000111",
+    7 =>  "1001000"
+);
 
 end fmcio_package;
 
