@@ -195,10 +195,10 @@ begin
        status_error_code <= x"00"; 
     elsif rising_edge(clk) then
         if stat_fast_block_i.error_code /= x"00" then
-            status_error_block_id <= x"2";
+            status_error_block_id <= x"1";
             status_error_code <= stat_fast_block_i.error_code;
         elsif stat_command_block_i.error_i2c_master /= x"00" then
-            status_error_block_id <= x"3";
+            status_error_block_id <= x"2";
             status_error_code <= stat_command_block_i.error_i2c_master; 
         else
             status_error_block_id <= x"0";
