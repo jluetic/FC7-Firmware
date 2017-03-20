@@ -18,7 +18,6 @@ use work.user_package.ALL;
 entity triggered_data_all_CBCs is
 Port ( 
     clk40 : in std_logic;
-    clk320 : in std_logic;
     reset_i : in std_logic;
     triggered_data_frame_r_array_i : in triggered_data_frame_r_array;
     trig_data_to_hb_o : out triggered_data_frame_r

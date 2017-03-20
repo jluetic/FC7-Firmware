@@ -19,7 +19,6 @@ use work.user_package.all;
 
 entity trigger_data_cbc2_readout_wrapper is
 Port( 
-    clk320 : in std_logic;
     clk40 : in std_logic;
     reset_i : in std_logic;
     triggered_data_from_fe_i : in trig_data_from_fe_t;
@@ -50,7 +49,6 @@ begin
     allCBC_readout : entity work.triggered_data_all_CBCs
     port map(
         clk40 => clk40,
-        clk320 => clk320,
         reset_i => reset_i,
         triggered_data_frame_r_array_i => triggered_data_frame,
         trig_data_to_hb_o => trig_data_to_hb_o

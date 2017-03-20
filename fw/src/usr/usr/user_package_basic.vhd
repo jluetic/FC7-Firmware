@@ -2,32 +2,45 @@ library ieee;
 use ieee.std_logic_1164.all;
  
 package user_package is
-
-	constant sys_phase_mon_freq      : string   := "160MHz"; -- valid options only "160MHz" or "240MHz"    
-
-   --=== ipb slaves =============--
-	constant nbr_usr_slaves				: positive := 3 ;
-
-	constant user_ipb_stat_regs		: integer  := 0 ;
-	constant user_ipb_ctrl_regs		: integer  := 1 ;
+	
+	--===================================--
+	-- Important types
+        -- implementation enum type
+        type implementation_type is (OPTICAL, ELECTRICAL, EMULATION_CBC3);
+        -- fmc connection enum type (enumarates, which hardware can be connected to the FMC)
+        type fmc_hardware_type is (FMC_NONE, FMC_DIO5, FMC_2CBC2, FMC_8CBC2, FMC_2CBC3, FMC_8CBC3, FMC_OPTO_QUAD);
+	--===================================--
 
     --===================================--
     -- FMC Config
     --===================================--
-    -- fmc connection enum type (enumarates, which hardware can be connected to the FMC)
-    type fmc_hardware_type is (FMC_NONE, FMC_DIO5, FMC_2CBC2, FMC_8CBC2, FMC_2CBC3, FMC_8CBC3, FMC_OPTO_QUAD);
+    -- which implementation? electrical or optical? that is the question!
+    constant IMPLEMENTATION         : implementation_type := ELECTRICAL;
     -- specifies, what's connected to the FMC1 (l12)
     constant FMC1                   : fmc_hardware_type := FMC_8CBC2;
     -- specifies, what's connected to the FMC2 (l8)
     constant FMC2                   : fmc_hardware_type := FMC_DIO5;
     --===================================--
-    constant EMULATE_CBC3           : boolean := false;
     
+    --===================================--
+    -- Important configs (have to correspond the FMC's configs)
+    --===================================--
     -- 2 for CBC2, 3 for CBC3 (be careful!!!)
     constant CBC_VERSION            : integer := 2;     
 
     constant NUM_HYBRIDS            : integer := 1;
-    constant NUM_CHIPS              : integer := 8;
+    constant NUM_CHIPS              : integer := 8;    
+    --===================================--
+    
+    
+    
+    constant sys_phase_mon_freq      : string   := "160MHz"; -- valid options only "160MHz" or "240MHz"    
+
+   --=== ipb slaves =============--
+    constant nbr_usr_slaves                : positive := 3 ;
+
+    constant user_ipb_stat_regs        : integer  := 0 ;
+    constant user_ipb_ctrl_regs        : integer  := 1 ;
     
     -- this function helps to create a proper ammount of buffers and lines
     function number_of_lines_from_cbc(cbc_version_i: in integer) return integer;  
