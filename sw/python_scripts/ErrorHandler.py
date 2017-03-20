@@ -27,8 +27,8 @@ class ErrorHandler(object):
                 message = "CMD_I2C: Wrong Hybrid/Chip ID"
             elif hex(error_code) == "0x2fL":
                 message = "CMD_I2C: FSM in a wrong state"
-            elif hex(error_code[0:2]) == "0x3":
-                message = "PHY_I2C: " + str(error_code)
+            elif hex(error_code)[0:3] == "0x3":
+                message = "PHY_I2C: code #" + str(hex(error_code)[3:4])
             else:
                 message = "Unknown Code: " + str(hex(error_code))
         elif block_id == 2:
