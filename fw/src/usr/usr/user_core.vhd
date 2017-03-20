@@ -242,9 +242,9 @@ begin
 	ipb_clk 		      <= clk_31_250_bufg_i; 	-- select the frequency of the ipbus clock 
 	ipb_clk_o 	          <= ipb_clk;				-- always forward the selected ipb_clk to system core
     --
-	ip_addr_o 	          <= x"c0_a8_00_50";
+	ip_addr_o 	          <= x"c0_a8_01_50";
 	mac_addr_o	          <= x"aa_bb_cc_dd_ee_50";
-	rarp_en_o 		      <= '1';
+	rarp_en_o 		      <= '0';
 	use_i2c_eeprom_o      <= '1';
 	--===========================================--
 
