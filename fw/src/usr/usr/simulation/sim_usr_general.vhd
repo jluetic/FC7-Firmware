@@ -51,7 +51,7 @@ architecture Behavioral of sim_usr_general is
             
     -- command_type
     type ipb_command_type is (global_sel,i2c_write, i2c_read, fast);
-    type fast_command_type is (fast_reset, start, stop, load_config);
+    type fast_command_type is (fast_reset, start, stop, load_config, i2c_refresh);
     type sim_signal_type is (new_iteration, end_of_i2c_write, end_of_i2c_read, trigger_started, trigger_stopped);
     
     -- sim signals
@@ -130,6 +130,8 @@ architecture Behavioral of sim_usr_general is
            command := x"00000004";
         elsif fast_command_type_i = load_config then
            command := x"00000008"; 
+        elsif fast_command_type_i = i2c_refresh then
+           command := x"00100000"; 
         end if;
     return command;        
     end fast_command;
@@ -426,7 +428,6 @@ begin
         
         variable i2c_command : std_logic_vector(3 downto 0);
     begin
-
        
         send(new_iteration);
         wait for 3000ns;

@@ -173,6 +173,7 @@ fast_signal.fast_reset <= ctrl_fastblock_i.ipb_fast_reset or reset_int;
 fast_signal.orbit_reset <= ctrl_fastblock_i.ipb_orbit_reset or reset_int;
 fast_signal.trigger <= ctrl_fastblock_i.ipb_trigger or trigger_o;
 fast_signal.test_pulse_trigger <= ctrl_fastblock_i.ipb_test_pulse;
+fast_signal.i2c_refresh <= ctrl_fastblock_i.ipb_i2c_refresh;
 --===================================--
 -- END FAST SIGNALS
 --===================================--

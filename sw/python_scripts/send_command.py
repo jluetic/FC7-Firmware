@@ -60,6 +60,8 @@ def SendCommand_CTRL(name = "none"):
 	fc7.write("ctrl_fast_signal_trigger", 1)
     elif name == "fast_test_pulse":
 	fc7.write("ctrl_fast_signal_test_pulse", 1)
+    elif name == "fast_i2c_refresh":
+	fc7.write("ctrl_fast_signal_i2c_refresh", 1)
     else:
         print "Unknown Command"
 
@@ -123,20 +125,21 @@ def DataFromMask(data, mask_name):
 
 def ReadChipData():
   print "Reading Out Data:"
-  print "   ================================================================"
-  print "   | Hybrid ID             || Chip ID             || DATA         |"
-  print "   ================================================================"
+  print "   =========================================================================================="
+  print "   | Hybrid ID             || Chip ID             || Register                || DATA         |"
+  print "   =========================================================================================="
 
   while fc7.read("stat_command_i2c_fifo_replies_empty") == 0:
       reply = fc7.read("ctrl_command_i2c_reply_fifo")
       hybrid_id = DataFromMask(reply, "ctrl_command_i2c_reply_hybrid_id")
       chip_id = DataFromMask(reply, "ctrl_command_i2c_reply_chip_id")
       data = DataFromMask(reply, "ctrl_command_i2c_reply_data")
+      register = DataFromMask(reply, "ctrl_command_i2c_reply_register")
       #print bin(fc7.read("ctrl_i2c_command_fifo"))
       #print bin(reply)[4:12]
-      print '   | %s %-12i || %s %-12i || %-12s |' % ("Hybrid #", hybrid_id, "Chip #", chip_id, hex(data)[:4])
-      print "    --------------------------------------------------------------"
-  print "   ================================================================"    
+      print '   | %s %-12i || %s %-12i || %s %-12s || %-12s |' % ("Hybrid #", hybrid_id, "Chip #", chip_id, "Register #", hex(register)[:4], hex(data)[:4])
+      print "    -----------------------------------------------------------------------------------------"
+  print "   =========================================================================================="
 
 # tests the fast commands
 def FastTester():
@@ -190,20 +193,20 @@ def I2CTester():
 	num_i2c_registersPage2 = 2
        #                       i2c_command , hybrid_id ,  chip_id, use_mask, page , read , register_address , data;
 
-	for i in range(0, num_i2c_registersPage1):
-		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
-	for i in range(0, num_i2c_registersPage2):
-		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
-	for i in range(1, num_i2c_registersPage1):
-		SendCommand_I2C(          2,         0,       0, use_mask,    0, write,       i,    5)
-	for i in range(1, num_i2c_registersPage2):
-		SendCommand_I2C(          2,         0,       15, use_mask,    1, write,       i,    7)
-	for i in range(0, num_i2c_registersPage1):
-		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
-	for i in range(0, num_i2c_registersPage2):
-		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
+	#for i in range(0, num_i2c_registersPage1):
+	SendCommand_I2C(          0,         0,       0, use_mask,    0, read,        1,    10)	
+	#for i in range(0, num_i2c_registersPage2):
+	#	SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
+	#for i in range(1, num_i2c_registersPage1):
+	#	SendCommand_I2C(          2,         0,       0, use_mask,    0, write,       i,    5)
+	#for i in range(1, num_i2c_registersPage2):
+	#	SendCommand_I2C(          2,         0,       15, use_mask,    1, write,       i,    7)
+	#for i in range(0, num_i2c_registersPage1):
+	#	SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
+	#for i in range(0, num_i2c_registersPage2):
+	#	SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
 	
-	sleep(5)
+	sleep(1)
 
 	ReadStatus("After Send Command")
 	ReadChipData()
@@ -226,5 +229,6 @@ I2CTester()
 #SendCommand_CTRL("fast_trigger")
 #SendCommand_CTRL("fast_fast_reset")
 #SendCommand_CTRL("fast_test_pulse")
+#SendCommand_CTRL("fast_i2c_refresh")
 
 #CheckClockFrequencies()

@@ -36,10 +36,11 @@ ipb_daq_system_ctrl			40020000    ffffffff     1     1
    ctrl_fast_start			40022000    00000002     1     1
    ctrl_fast_stop			40022000    00000004     1     1
    ctrl_fast_load_config		40022000    00000008     1     1
-   ctrl_fast_signal_fast_reset  	40022000    00000010     1     1
-   ctrl_fast_signal_test_pulse  	40022000    00000020     1     1
-   ctrl_fast_signal_trigger     	40022000    00000040     1     1
-   ctrl_fast_signal_orbit_reset 	40022000    00000080     1     1  
+   ctrl_fast_signal_fast_reset  	40022000    00010000     1     1
+   ctrl_fast_signal_test_pulse  	40022000    00020000     1     1
+   ctrl_fast_signal_trigger     	40022000    00040000     1     1
+   ctrl_fast_signal_orbit_reset 	40022000    00080000     1     1
+   ctrl_fast_signal_i2c_refresh 	40022000    00100000     1     1    
 
 ipb_daq_system_stat			40030000    ffffffff     1     0
    stat_error_block_id			40030001    0000000f     1     0

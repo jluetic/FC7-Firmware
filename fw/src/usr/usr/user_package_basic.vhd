@@ -240,6 +240,7 @@ package user_package is
       ipb_test_pulse        : std_logic;
       ipb_trigger           : std_logic;
       ipb_orbit_reset       : std_logic;
+      ipb_i2c_refresh       : std_logic;
     end record;
     
     type stat_fastblock_type is
