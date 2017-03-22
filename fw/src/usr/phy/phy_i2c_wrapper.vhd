@@ -89,6 +89,7 @@ begin
                             chip_address_req <= i2c_address_map(to_integer(unsigned(cmd_request.cmd_chip_id)));
                             rw_req <= cmd_request.cmd_read;
                             page_req <= cmd_request.cmd_page;
+                            mask_req <= cmd_request.cmd_write_mask;
                             reg_address_req <= cmd_request.cmd_register;
                             data_req <= cmd_request.cmd_data;
                             state <= READ_CURRENT_PAGE;
@@ -163,7 +164,7 @@ begin
                         chip_address <= chip_address_req;
                         reg_address <= reg_address_req;
                         rw <= rw_req;
-                        data <= (data_req and mask_req) or reg_val;
+                        data <= (data_req and mask_req) or (reg_val and (not mask_req));
                         state <= WAIT_FOR_DONE;
     
                     when WAIT_FOR_DONE =>
