@@ -133,9 +133,9 @@ def SetParameterI2C(parameter_name, data):
 		fc7.write("cnfg_command_i2c_mask", cbc2_map[parameter_name].mask)
 		write_data = ShiftDataToMask(cbc2_map[parameter_name].mask, data)
 		use_mask = 1
-		sleep(0.5)
 
 	SendCommand_I2C(2, 0, 0, use_mask, cbc2_map[parameter_name].page, write, cbc2_map[parameter_name].reg_address, write_data)
+	sleep(0.5)
 
 def CBC_Config():
 	SetParameterI2C("trigger_latency", 195)
