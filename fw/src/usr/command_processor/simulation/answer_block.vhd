@@ -52,7 +52,7 @@ begin
         else
             i2c_reply.cmd_strobe <= '0';
             i2c_reply.cmd_err <= '0';
-            i2c_reply.cmd_data <= x"00";
+            i2c_reply.cmd_data <= x"ab";
         end if;
     end if;
 end process;    

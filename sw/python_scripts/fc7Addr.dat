@@ -1,14 +1,16 @@
 *
-user_ipb_stat_regs		40000000    ffffffff     1     1
+user_ipb_stat_regs			40000000    ffffffff     1     1
 
-ipb_daq_system_cnfg		40010000    ffffffff     1     1
-   cnfg_command_i2c		40011001    ffffffff	 1     1	
-   cnfg_command_i2c_mask	40011001    000000ff	 1     1
-   cnfg_fast_triggers_to_accept 40012000    ffffffff	 1     1
-   cnfg_fast_user_frequency     40012001    ffffffff	 1     1
-   cnfg_fast_source_full	40012002    ffffffff	 1     1	
-   cnfg_fast_source             40012002    0000000f	 1     1
-   cnfg_fast_mask               40012003    ffffffff	 1     1
+ipb_daq_system_cnfg			40010000    ffffffff     1     1
+   cnfg_command_i2c			40011001    ffffffff	 1     1	
+   cnfg_command_i2c_mask		40011001    000000ff	 1     1
+   cnfg_fast_triggers_to_accept 	40012000    ffffffff	 1     1
+   cnfg_fast_user_frequency     	40012001    ffffffff	 1     1
+   cnfg_fast_source_full		40012002    ffffffff	 1     1	
+   cnfg_fast_source             	40012002    0000000f	 1     1
+   cnfg_fast_mask               	40012003    ffffffff	 1     1
+   cnfg_fast_delay_after_fast_reset	40012004    ffffffff	 1     1
+   cnfg_fast_delay_after_test_pulse	40012005    ffffffff	 1     1
   
 ipb_daq_system_ctrl			40020000    ffffffff     1     1
    ctrl_command_global		        40021000    ffffffff     1     1
@@ -36,10 +38,11 @@ ipb_daq_system_ctrl			40020000    ffffffff     1     1
    ctrl_fast_start			40022000    00000002     1     1
    ctrl_fast_stop			40022000    00000004     1     1
    ctrl_fast_load_config		40022000    00000008     1     1
-   ctrl_fast_signal_fast_reset  	40022000    00000010     1     1
-   ctrl_fast_signal_test_pulse  	40022000    00000020     1     1
-   ctrl_fast_signal_trigger     	40022000    00000040     1     1
-   ctrl_fast_signal_orbit_reset 	40022000    00000080     1     1  
+   ctrl_fast_signal_fast_reset  	40022000    00010000     1     1
+   ctrl_fast_signal_test_pulse  	40022000    00020000     1     1
+   ctrl_fast_signal_trigger     	40022000    00040000     1     1
+   ctrl_fast_signal_orbit_reset 	40022000    00080000     1     1
+   ctrl_fast_signal_i2c_refresh 	40022000    00100000     1     1    
 
 ipb_daq_system_stat			40030000    ffffffff     1     0
    stat_error_block_id			40030001    0000000f     1     0
@@ -57,3 +60,20 @@ ipb_daq_system_stat			40030000    ffffffff     1     0
    stat_rate_ipb			4003f000    ffffffff     1     0
    stat_rate_40mhz	        	4003f001    ffffffff	 1     0
    stat_rate_trigger			4003f002    ffffffff     1     0
+
+   hybrid1_general			4003e000    ffffffff	 1     0
+   hybrid1_general_lat_err		4003e000    80000000	 1     0
+   hybrid1_general_overflow		4003e000    40000000	 1     0
+   hybrid1_general_pipe_address		4003e000    000001ff	 1     0
+   hybrid1_general_latency		4003e000    0003fe00	 1     0
+   hybrid1_general_trigger_counter	4003e000    07fc0000	 1     0
+   hybrid1_channels_1			4003e001    ffffffff     1     0
+   hybrid1_channels_2			4003e002    ffffffff     1     0
+   hybrid1_channels_3			4003e003    ffffffff     1     0
+   hybrid1_channels_4			4003e004    ffffffff     1     0
+   hybrid1_channels_5			4003e005    ffffffff     1     0
+   hybrid1_channels_6			4003e006    ffffffff     1     0
+   hybrid1_channels_7			4003e007    ffffffff     1     0
+   hybrid1_channels_8			4003e008    3fffffff     1     0
+   
+

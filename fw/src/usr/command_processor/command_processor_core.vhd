@@ -50,12 +50,30 @@ architecture rtl of command_processor_core is
     signal reply_fifo_we         : std_logic;
     signal reply_fifo_data_in    : std_logic_vector(31 downto 0);
     
-    signal i2c_request_int       : cmd_wbus;   
+    signal i2c_request_int       : cmd_wbus;  
+    
+    signal reset_tmp        : std_logic :='0';  
         
 begin
 
     -- used for counter
-    i2c_request <= i2c_request_int;            
+    i2c_request <= i2c_request_int;      
+    
+     
+      process(clk_40MHz)
+           variable cnt : integer := 0;
+   
+       begin
+           if (rising_edge(clk_40MHz)) then
+               if (cnt<6) then
+                   reset_tmp <= '1';
+                   cnt := cnt+1;
+               else
+                   reset_tmp <= '0';
+               end if;
+           end if;
+        end process;
+     
      
      --===================================--
      -- I2C Commands FIFO
@@ -64,12 +82,12 @@ begin
     --===================================--
      port map
      (
-        rst            => reset or ctrl_command_block_from_ipbus.i2c_reset or ctrl_command_block_from_ipbus.i2c_reset_fifos,
+        rst            => reset_tmp or reset or ctrl_command_block_from_ipbus.i2c_reset or ctrl_command_block_from_ipbus.i2c_reset_fifos,
         wr_clk         => ipb_clk,
         rd_clk         => clk_40MHz,
         din            => ctrl_command_block_from_ipbus.command_fifo_data,
         wr_en          => ctrl_command_block_from_ipbus.command_fifo_we,
-        rd_en          => command_fifo_read_next,
+        rd_en          => (not reset_tmp) and command_fifo_read_next,
         dout           => command_fifo_data_out,
         full           => stat_command_block.fifo_statuses.i2c_commands_full,
         empty          => command_fifo_empty

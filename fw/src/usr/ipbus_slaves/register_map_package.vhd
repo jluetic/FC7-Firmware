@@ -64,7 +64,7 @@ constant fc7_register_map : register_map :=
     11  => ( register_width_cnfg =>  0,      register_width_ctrl =>  0,      register_width_stat =>  0,      block_name  =>  "na______" ),
     12  => ( register_width_cnfg =>  0,      register_width_ctrl =>  0,      register_width_stat =>  0,      block_name  =>  "na______" ),
     13  => ( register_width_cnfg =>  0,      register_width_ctrl =>  0,      register_width_stat =>  0,      block_name  =>  "na______" ),
-    14  => ( register_width_cnfg =>  0,      register_width_ctrl =>  0,      register_width_stat =>  0,      block_name  =>  "na______" ),
+    14  => ( register_width_cnfg =>  0,      register_width_ctrl =>  0,      register_width_stat =>  9,      block_name  =>  "temp____" ),
     15  => ( register_width_cnfg =>  0,      register_width_ctrl =>  0,      register_width_stat =>  4,      block_name  =>  "test_clk" )
 ); 
 --================================================================================================================================================--

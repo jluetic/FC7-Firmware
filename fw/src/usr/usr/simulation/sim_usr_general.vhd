@@ -51,7 +51,7 @@ architecture Behavioral of sim_usr_general is
             
     -- command_type
     type ipb_command_type is (global_sel,i2c_write, i2c_read, fast);
-    type fast_command_type is (fast_reset, start, stop, load_config);
+    type fast_command_type is (fast_reset, start, stop, load_config, i2c_refresh);
     type sim_signal_type is (new_iteration, end_of_i2c_write, end_of_i2c_read, trigger_started, trigger_stopped);
     
     -- sim signals
@@ -82,18 +82,19 @@ architecture Behavioral of sim_usr_general is
     -- i2c
     --===================================--      
     -- hybrid_id
-    signal hybrid_id              : std_logic_vector(3 downto 0) := x"0";
+    signal hybrid_id              : std_logic_vector(3 downto 0) := (others=>'0');
     -- cbc on hybrid id
-    signal chip_id                : std_logic_vector(3 downto 0) := x"1";
+    signal chip_id                : std_logic_vector(3 downto 0) := "0000";
     -- use mask
     signal use_mask               : std_logic := '0';
     -- page in the CBC
     signal page                   : std_logic := '0';
     -- read or write setting
-    signal read                   : std_logic := '1';
+    signal read                   : std_logic := '0';
     -- register_address
-    signal register_address       : std_logic_vector(7 downto 0) := x"23";
-    signal data                   : std_logic_vector(7 downto 0) := x"AB"; 
+    signal register_address       : std_logic_vector(7 downto 0) := "00000000";
+    signal data                   : std_logic_vector(7 downto 0) := x"00"; 
+
     --===================================--    
 
     --===================================--
@@ -129,6 +130,8 @@ architecture Behavioral of sim_usr_general is
            command := x"00000004";
         elsif fast_command_type_i = load_config then
            command := x"00000008"; 
+        elsif fast_command_type_i = i2c_refresh then
+           command := x"00100000"; 
         end if;
     return command;        
     end fast_command;
@@ -319,6 +322,7 @@ begin
     ipb_mosi_i(ipb_daq_system_stat_sel).ipb_strobe <= ipb_stat_strobe;
 
     STIMULUS: process
+
         procedure send_ipb_ctrl_strobe is
         begin
             ipb_ctrl_strobe <= '1';
@@ -357,19 +361,46 @@ begin
             send_ipb_ctrl_strobe;
             wait for 64 ns;
         end read_i2c_reply;
+        --**************************************************************************************
         
-        -- 0 - certain hybrid/chip, 1 - all chips on hybrid, 2 - all hybrids all chups
-        procedure write_i2c_command( i2c_command : in std_logic_vector(3 downto 0) ) is
+        procedure write_i2c_command1( i2c_command : in std_logic_vector(3 downto 0) ) is
             variable command_i2c : std_logic_vector(31 downto 0);
-        begin            
-            command_i2c := i2c_command & hybrid_id & chip_id & '0' & use_mask & page & read & register_address & data;
+        begin     
+            --command_i2c := i2c_command & hybrid_id & chip_id & '0' & use_mask & page & read & register_address & data;
+            command_i2c := i2c_command &      "0000" &  "0000" & '0' &   '0'    &  '0' &  '0' & "00100010" & "11111111";
             ipb_ctrl_addr <= ctrl_address(i2c_write);            
             -- combined from hybrid id, chip id, read, page, etc.. see in signal definition
             ipb_ctrl_wdata <= command_i2c;
             ipb_ctrl_write <= '1';
             send_ipb_ctrl_strobe;      
-        end write_i2c_command;
+        end write_i2c_command1;
         
+        procedure write_i2c_command2( i2c_command : in std_logic_vector(3 downto 0) ) is
+            variable command_i2c : std_logic_vector(31 downto 0);
+        begin            
+            --command_i2c := i2c_command & hybrid_id & chip_id & '0' & use_mask & page & read & register_address & data;
+            command_i2c :=   i2c_command &    "0001" &  "0000" & '0' &    '0'   &  '0' &  '0' & "00000010" & "11111111";
+            ipb_ctrl_addr <= ctrl_address(i2c_write);            
+            -- combined from hybrid id, chip id, read, page, etc.. see in signal definition
+            ipb_ctrl_wdata <= command_i2c;
+            ipb_ctrl_write <= '1';
+            send_ipb_ctrl_strobe;      
+        end write_i2c_command2;
+        
+        procedure write_i2c_command3( i2c_command : in std_logic_vector(3 downto 0) ) is
+            variable command_i2c : std_logic_vector(31 downto 0);
+        begin            
+            --command_i2c := i2c_command & hybrid_id & chip_id & '0' & use_mask & page & read & register_address & data;
+            command_i2c :=   i2c_command &    "0000" &  "0000" & '0' &    '0'   &  '0' &  '1' & "00100010" & "00000000";
+            ipb_ctrl_addr <= ctrl_address(i2c_write);            
+            -- combined from hybrid id, chip id, read, page, etc.. see in signal definition
+            ipb_ctrl_wdata <= command_i2c;
+            ipb_ctrl_write <= '1';
+            send_ipb_ctrl_strobe;      
+        end write_i2c_command3;
+                
+            
+      --************************************************************************  
         procedure send( sim_signal : in sim_signal_type ) is
         begin
             if sim_signal = new_iteration then
@@ -397,108 +428,134 @@ begin
         
         variable i2c_command : std_logic_vector(3 downto 0);
     begin
+       
         send(new_iteration);
-        -- initialization
-        reset_board;
-        
-        --=======================--
-        -- send i2c command
-        --=======================--
-        write_i2c_command(x"1");       
-        wait for 1500 ns;
-        send(end_of_i2c_write);
-        wait for 100 ns;     
-        
-        --=======================--
-        -- read i2c reply
-        --=======================--
-        read_i2c_reply;
-        read_i2c_reply;
-        read_i2c_reply;               
-        wait for 100 ns; 
-        send(end_of_i2c_read);  
-        
-        --=======================--
-        -- config trigger source to User-Defined Frequency (will be 1 kHz now)
-        -- see fc7Addr.dat in python scripts to understand the values
-        --=======================--
-        
-        -- trigger source line
-        ipb_cnfg_addr  <= x"4002_2002";
-        -- 1 - l1, 2 - stubs, 3 - user-defined
-        ipb_cnfg_wdata <= x"00000003";
-        send_ipb_cnfg_strobe;
-        
-        -- trigger frequency line
-        ipb_cnfg_addr  <= x"4002_2001";
-        -- 1MHz
-        ipb_cnfg_wdata <= x"000003E8";
-        send_ipb_cnfg_strobe;
-        
-        --=======================--
-        -- play with triggers
-        --=======================--
-        ipb_ctrl_addr <= ctrl_address(fast);  
-        ipb_ctrl_write <= '1';      
-        ipb_ctrl_wdata <= fast_command(load_config);
-        send_ipb_ctrl_strobe;
-        wait for 100 ns;
-        
-        send(trigger_started);
-        ipb_ctrl_wdata <= fast_command(start);
-        send_ipb_ctrl_strobe;
-        wait for 10 us;
-        
-        ipb_ctrl_wdata <= fast_command(stop);
-        send_ipb_ctrl_strobe;
-        send(trigger_stopped);
-        
-        -- wait at the end    
-        wait for 300 ns;
+        wait for 3000ns;
+       -- initialization
+       reset_board;
+       
+       --=======================--
+         -- play with i2c
+         --=======================--
+       --write to VTH register on chip 0 of hybrid 0 -> should see change in stub data output to hybrid block
+       wait for 5000ns;
+       write_i2c_command1(x"0");
+       send(end_of_i2c_write); 
+--       -- write to mask register of both chips on hybrid 1 sequentially -> should see change in channel data of the triggered
+--       --data for this hybrid. We mask a channel here (for the second trigger send below this i2c setting is there, so
+--       --there should be a difference in channel data between the first and the second  range triggers send)      
+       wait for 500 ns;
+       write_i2c_command2(x"1");
+       send(end_of_i2c_write);       
+       --do a read from register on page 2, should reply 80
+       wait for 500 ns;
+       write_i2c_command3(x"0");
+       send(end_of_i2c_write);       
+       wait for 500 ns;
+
+         
+       
+       --=======================--
+       -- config trigger source to User-Defined Frequency (will be 1 kHz now)
+       -- see fc7Addr.dat in python scripts to understand the values
+       --=======================--
+       
+       -- trigger source line
+       ipb_cnfg_addr  <= x"4002_2002";
+       -- 1 - l1, 2 - stubs, 3 - user-defined
+       ipb_cnfg_wdata <= x"00000003";
+       send_ipb_cnfg_strobe;
+       
+       -- trigger frequency line
+       ipb_cnfg_addr  <= x"4002_2001";
+       -- 1MHz
+       ipb_cnfg_wdata <= x"000003E8";
+       send_ipb_cnfg_strobe;
+       
+--       --=======================--
+--       -- play with triggers for the first time, with the intial values set in the i2c registers
+--       --=======================--
+        wait for 100us;
+       ipb_ctrl_addr <= ctrl_address(fast);  
+       ipb_ctrl_write <= '1';      
+       ipb_ctrl_wdata <= fast_command(load_config);
+       send_ipb_ctrl_strobe;
+       wait for 100 ns;
+       
+       send(trigger_started);
+       ipb_ctrl_wdata <= fast_command(start);
+       send_ipb_ctrl_strobe;
+       wait for 10 us;
+       
+       ipb_ctrl_wdata <= fast_command(stop);
+       send_ipb_ctrl_strobe;
+       send(trigger_stopped);
+       
+   --       --=======================--
+   --       -- play with triggers for the second time after there was something written to the masking registers
+   --       --=======================--
+           wait for 2500us;
+          ipb_ctrl_addr <= ctrl_address(fast);  
+          ipb_ctrl_write <= '1';      
+          ipb_ctrl_wdata <= fast_command(load_config);
+          send_ipb_ctrl_strobe;
+          wait for 100 ns;
+          
+          send(trigger_started);
+          ipb_ctrl_wdata <= fast_command(start);
+          send_ipb_ctrl_strobe;
+          wait for 10 us;
+          
+          ipb_ctrl_wdata <= fast_command(stop);
+          send_ipb_ctrl_strobe;
+          send(trigger_stopped);
+       
+--       -- wait at the end    
+       wait;
     end process;
     
-    INFO_PRINTER: process
-    begin
-        wait until new_iteration_sig = '1';
-        report "Time " & time'image(now) & ": New Iteration Started" severity note;        
-    end process;
+--    INFO_PRINTER: process
+--    begin
+--        wait until new_iteration_sig = '1';
+--        report "Time " & time'image(now) & ": New Iteration Started" severity note;        
+--    end process;
     
-    i2c_read_fifo <= '1' when ipb_miso_o(ipb_daq_system_ctrl_sel).ipb_rdata /= x"00000000" else '0';
+--    i2c_read_fifo <= '1' when ipb_miso_o(ipb_daq_system_ctrl_sel).ipb_rdata /= x"00000000" else '0';
     
-    SELF_CHECKER: process (new_iteration_sig, end_of_i2c_write_sig, end_of_i2c_read_sig, trigger_started_sig, trigger_stopped_sig, i2c_read_fifo)
-        variable i2c_command_counter : integer := 0;
-        variable i2c_replies_counter : integer := 0;
-        variable trigger_counter : integer := 0;        
-    begin              
-        if new_iteration_sig = '1' then
-            i2c_command_counter := 0;
-            i2c_replies_counter := 0;
-        end if;
-        if end_of_i2c_write_sig = '1' then
-            -- not implemented yet, needs to be routed from usr block outside
-            --ASSERT i2c_command_counter = NUM_CHIPS REPORT ("Wrong number of I2C Commands Sent.. Has to be " & integer'image(NUM_CHIPS) & ", but " & integer'image(i2c_command_counter) & " were sent!") SEVERITY failure;
-            i2c_replies_counter := 0;
-        end if;
-        if end_of_i2c_read_sig = '1' then
-            ASSERT i2c_replies_counter = 3 REPORT ("Wrong number of I2C Commands have been read.. Has to be " & integer'image(3) & ", but " & integer'image(i2c_replies_counter) & " have been read!") SEVERITY failure;
-        end if;
-        if trigger_stopped_sig = '1' then
-            -- not implemented yet, needs to be routed from usr block outside
-            --ASSERT trigger_counter = 10 REPORT ("Wrong number of triggers received.. Has to be " & integer'image(10) & ", but " & integer'image(trigger_counter) & " were received!") SEVERITY failure;
-        end if;
-        -- here i2c_request.cmd_strobe has to be used
-        if rising_edge(i2c_read_fifo) then
-            i2c_command_counter := i2c_command_counter + 1;
-        end if;
-        if rising_edge(i2c_read_fifo) then
-            i2c_replies_counter := i2c_replies_counter + 1;
-        end if;            
-        if trigger_started_sig = '1' then
-            trigger_counter := 0;
-        -- here trigger has to be used
-        elsif rising_edge(i2c_read_fifo) then
-            trigger_counter := trigger_counter + 1;
-        end if;
-    end process;
+--    SELF_CHECKER: process (new_iteration_sig, end_of_i2c_write_sig, end_of_i2c_read_sig, trigger_started_sig, trigger_stopped_sig, i2c_read_fifo)
+--        variable i2c_command_counter : integer := 0;
+--        variable i2c_replies_counter : integer := 0;
+--        variable trigger_counter : integer := 0;        
+--    begin              
+--        if new_iteration_sig = '1' then
+--            i2c_command_counter := 0;
+--            i2c_replies_counter := 0;
+--        end if;
+--        if end_of_i2c_write_sig = '1' then
+--            -- not implemented yet, needs to be routed from usr block outside
+--            --ASSERT i2c_command_counter = NUM_CHIPS REPORT ("Wrong number of I2C Commands Sent.. Has to be " & integer'image(NUM_CHIPS) & ", but " & integer'image(i2c_command_counter) & " were sent!") SEVERITY failure;
+--            i2c_replies_counter := 0;
+--        end if;
+--        if end_of_i2c_read_sig = '1' then
+--            ASSERT i2c_replies_counter = 3 REPORT ("Wrong number of I2C Commands have been read.. Has to be " & integer'image(3) & ", but " & integer'image(i2c_replies_counter) & " have been read!") SEVERITY warning;
+--        end if;
+--        if trigger_stopped_sig = '1' then
+--            -- not implemented yet, needs to be routed from usr block outside
+--            --ASSERT trigger_counter = 10 REPORT ("Wrong number of triggers received.. Has to be " & integer'image(10) & ", but " & integer'image(trigger_counter) & " were received!") SEVERITY failure;
+--        end if;
+--        -- here i2c_request.cmd_strobe has to be used
+--        if rising_edge(i2c_read_fifo) then
+--            i2c_command_counter := i2c_command_counter + 1;
+--        end if;
+--        if rising_edge(i2c_read_fifo) then
+--            i2c_replies_counter := i2c_replies_counter + 1;
+--        end if;            
+--        if trigger_started_sig = '1' then
+--            trigger_counter := 0;
+--        -- here trigger has to be used
+--        elsif rising_edge(i2c_read_fifo) then
+--            trigger_counter := trigger_counter + 1;
+--        end if;
+--    end process;
 
 end Behavioral;

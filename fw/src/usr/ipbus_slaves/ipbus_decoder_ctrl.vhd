@@ -58,7 +58,8 @@ architecture rtl of ipbus_decoder_ctrl is
                                                              ipb_fast_reset => '0',
                                                              ipb_test_pulse => '0',
                                                              ipb_trigger => '0',
-                                                             ipb_orbit_reset => '0');
+                                                             ipb_orbit_reset => '0',
+                                                             ipb_i2c_refresh => '0');
                                                          
     signal ctrl_fastblock_int       : ctrl_fastblock_type;
     
@@ -105,6 +106,7 @@ architecture rtl of ipbus_decoder_ctrl is
     constant FAST_BLOCK_SCG_CFS_TEST_PULSE_REQ_BIT          : integer := 17;
     constant FAST_BLOCK_SCG_CFS_TRIGGER_BIT                 : integer := 18;
     constant FAST_BLOCK_SCG_CFS_ORBIT_RESET_BIT             : integer := 19;
+    constant FAST_BLOCK_SCG_CFS_I2C_REFRESH_BIT             : integer := 20;
     --====================================--   
     
     --====================================--
@@ -196,6 +198,7 @@ begin
                 ctrl_fastblock_int.ipb_test_pulse <= ipb_mosi_i.ipb_wdata(FAST_BLOCK_SCG_CFS_TEST_PULSE_REQ_BIT); 
                 ctrl_fastblock_int.ipb_trigger <= ipb_mosi_i.ipb_wdata(FAST_BLOCK_SCG_CFS_TRIGGER_BIT); 
                 ctrl_fastblock_int.ipb_orbit_reset <= ipb_mosi_i.ipb_wdata(FAST_BLOCK_SCG_CFS_ORBIT_RESET_BIT);
+                ctrl_fastblock_int.ipb_i2c_refresh <= ipb_mosi_i.ipb_wdata(FAST_BLOCK_SCG_CFS_I2C_REFRESH_BIT);
             elsif sel = COMMAND_BLOCK_I2C_CONTROL_SEL then
                 ctrl_command_block_from_ipbus.i2c_reset <= ipb_mosi_i.ipb_wdata(COMMAND_BLOCK_I2C_CONTROL_RESET_BIT);
                 ctrl_command_block_from_ipbus.i2c_reset_fifos <= ipb_mosi_i.ipb_wdata(COMMAND_BLOCK_I2C_CONTROL_RESET_FIFOS_BIT);  

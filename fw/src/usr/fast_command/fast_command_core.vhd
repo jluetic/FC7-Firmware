@@ -42,6 +42,14 @@ architecture rtl of fast_command_core is
     -- masks
     signal ones_mask                : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
     
+    -- test pulse sending logics
+    signal test_pulse_counter       : natural := 0;
+    signal test_pulse_counter_started : std_logic := '0';
+    signal test_pulse_fast_reset     : std_logic := '0';
+    signal test_pulse_l1a           : std_logic := '0';
+    signal DELAY_AFTER_FAST_RESET   : natural := 50;
+    signal DELAY_AFTER_TEST_PULSE   : natural := 200;
+    
     -- trigger fsm related
     type trigger_state_type is (Idle, Running);
     signal trigger_state            : trigger_state_type := Idle;
@@ -169,12 +177,48 @@ port map (
 --===================================--
 -- BEGIN FAST SIGNALS
 --===================================--
-fast_signal.fast_reset <= ctrl_fastblock_i.ipb_fast_reset or reset_int;
+fast_signal.fast_reset <= ctrl_fastblock_i.ipb_fast_reset or reset_int or test_pulse_fast_reset;
 fast_signal.orbit_reset <= ctrl_fastblock_i.ipb_orbit_reset or reset_int;
-fast_signal.trigger <= ctrl_fastblock_i.ipb_trigger or trigger_o;
-fast_signal.test_pulse_trigger <= ctrl_fastblock_i.ipb_test_pulse;
+fast_signal.trigger <= ctrl_fastblock_i.ipb_trigger or trigger_o or test_pulse_l1a;
+--fast_signal.test_pulse_trigger <= ctrl_fastblock_i.ipb_test_pulse;
+fast_signal.i2c_refresh <= ctrl_fastblock_i.ipb_i2c_refresh;
 --===================================--
 -- END FAST SIGNALS
+--===================================--
+
+--===================================--
+-- Test Pulse Sending Logics
+--===================================--
+process (reset_int, clk_40MHz)
+begin
+    if reset_int = '1' then
+        fast_signal.test_pulse_trigger <= '0';
+        test_pulse_fast_reset <= '0';
+        test_pulse_l1a <= '0';
+        test_pulse_counter <= 0;
+        test_pulse_counter_started <= '0';
+    elsif rising_edge(clk_40MHz) then
+        fast_signal.test_pulse_trigger <= '0';
+        test_pulse_fast_reset <= '0';
+        test_pulse_l1a <= '0';
+        
+        if ctrl_fastblock_i.ipb_test_pulse = '1' then
+            test_pulse_counter <= 1;
+            test_pulse_counter_started <= '1';
+            test_pulse_fast_reset <= '1';
+        elsif test_pulse_counter_started = '1' then
+            if test_pulse_counter = DELAY_AFTER_FAST_RESET then
+                fast_signal.test_pulse_trigger <= '1';
+            end if;
+            if test_pulse_counter = DELAY_AFTER_FAST_RESET+DELAY_AFTER_TEST_PULSE then
+                test_pulse_l1a <= '1';
+                test_pulse_counter_started <= '0';
+                test_pulse_counter <= 0;
+            end if;
+            test_pulse_counter <= test_pulse_counter + 1;
+        end if;
+    end if;
+end process;
 --===================================--
 
 COMMAND_HANDLER: process (reset_int, clk_40MHz)
@@ -189,6 +233,9 @@ begin
         temp_user_trigger_frequency <= 1;
         temp_triggers_to_accept <= 0;
         configured <= '0';
+        
+        DELAY_AFTER_FAST_RESET <= 50;
+        DELAY_AFTER_TEST_PULSE <= 200;
         
     elsif rising_edge(clk_40MHz) then
         ipb_reset <= '0';
@@ -207,10 +254,17 @@ begin
                 if trigger_state = Running then
                     trigger_stop_loc <= '1';
                 end if;
+                
+                --needs to be buffered and changed after trigger was stopped
                 temp_trigger_source <= cnfg_fastblock_i.trigger_source;
                 temp_hybrid_mask_inv <= not cnfg_fastblock_i.stubs_mask(NUM_HYBRIDS-1 downto 0);
                 temp_user_trigger_frequency <= cnfg_fastblock_i.user_trigger_frequency;
                 temp_triggers_to_accept <= cnfg_fastblock_i.triggers_to_accept;
+                
+                -- can be set directly
+                DELAY_AFTER_FAST_RESET <= cnfg_fastblock_i.delay_after_fast_reset;
+                DELAY_AFTER_TEST_PULSE <= cnfg_fastblock_i.delay_after_test_pulse;           
+                
                 configured <= '1';
             elsif ctrl_fastblock_i.start_trigger = '1' then
                 if trigger_state = Idle then
