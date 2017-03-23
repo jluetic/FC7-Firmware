@@ -58,6 +58,9 @@ architecture rtl of cmd_i2c_master is
     -- register_address
     signal register_address       : std_logic_vector(7 downto 0) := (others => '0');
     signal data_to_chip           : std_logic_vector(7 downto 0) := (others => '0');
+    
+    -- defines if we need to readback
+    signal readback               : std_logic := '0';
     --==========================--
     
     
@@ -115,11 +118,12 @@ begin
             command_type <= command_fifo_data_i(31 downto 28);
             hybrid_id <= command_fifo_data_i(27 downto 24);
             chip_id <= command_fifo_data_i(23 downto 20);
+            readback <= command_fifo_data_i(19);
             use_mask <= command_fifo_data_i(18);
             page <= command_fifo_data_i(17);
             read <= command_fifo_data_i(16);
             register_address <= command_fifo_data_i(15 downto 8);
-            data_to_chip <= command_fifo_data_i(7 downto 0);
+            data_to_chip <= command_fifo_data_i(7 downto 0);   
             
             command_fifo_read_next_o <= '1';            
             i2c_fsm_state <= SendCommand;
@@ -276,8 +280,16 @@ begin
         when Finished =>
             i2c_fsm_status <= x"6";
             command_fifo_read_next_o <= '0';
-            reply_fifo_we_o <= '0';            
-            i2c_fsm_state <= Idle;                     
+            reply_fifo_we_o <= '0';
+            if read = '0' and readback = '1' then
+                read <= '1';
+                error_code <= x"00";
+                chip_counter <= 0;
+                hybrid_counter <= 0;
+                i2c_fsm_state <= SendCommand;
+            else            
+                i2c_fsm_state <= Idle;
+            end if;                     
             
         when others =>
             i2c_fsm_status <= x"f";

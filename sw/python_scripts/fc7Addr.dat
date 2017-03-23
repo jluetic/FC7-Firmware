@@ -22,6 +22,7 @@ ipb_daq_system_ctrl			40020000    ffffffff     1     1
      ctrl_command_i2c_command_type	40021002    f0000000	 1     1
      ctrl_command_i2c_command_hybrid_id	40021002    0f000000	 1     1
      ctrl_command_i2c_command_chip_id	40021002    00f00000	 1     1
+     ctrl_command_i2c_command_readback	40021002    00080000	 1     1
      ctrl_command_i2c_command_mask	40021002    00040000	 1     1
      ctrl_command_i2c_command_page	40021002    00020000	 1     1
      ctrl_command_i2c_command_read	40021002    00010000	 1     1

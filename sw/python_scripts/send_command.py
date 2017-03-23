@@ -15,18 +15,19 @@ f.close()
 fc7 = ChipsBusUdp(fc7AddrTable, ipaddr, 50001)
 #############
 # Combine and Send I2C Command
-def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read, register_address, data):
+def SendCommand_I2C(command, hybrid_id, chip_id, use_mask, page, read, register_address, data, ReadBack):
 
   raw_command = fc7AddrTable.getItem("ctrl_command_i2c_command_type").shiftDataToMask(command)
   raw_hybrid_id = fc7AddrTable.getItem("ctrl_command_i2c_command_hybrid_id").shiftDataToMask(hybrid_id)
   raw_chip_id = fc7AddrTable.getItem("ctrl_command_i2c_command_chip_id").shiftDataToMask(chip_id)
+  raw_readback = fc7AddrTable.getItem("ctrl_command_i2c_command_readback").shiftDataToMask(ReadBack)
   raw_use_mask = fc7AddrTable.getItem("ctrl_command_i2c_command_mask").shiftDataToMask(use_mask)
   raw_page = fc7AddrTable.getItem("ctrl_command_i2c_command_page").shiftDataToMask(page)
   raw_read = fc7AddrTable.getItem("ctrl_command_i2c_command_read").shiftDataToMask(read)
   raw_register = fc7AddrTable.getItem("ctrl_command_i2c_command_register").shiftDataToMask(register_address)
   raw_data = fc7AddrTable.getItem("ctrl_command_i2c_command_data").shiftDataToMask(data)
 
-  cmd = raw_command + raw_hybrid_id + raw_chip_id + raw_use_mask + raw_page + raw_read + raw_register + raw_data;
+  cmd = raw_command + raw_hybrid_id + raw_chip_id + raw_readback + raw_use_mask + raw_page + raw_read + raw_register + raw_data;
 
   description = "Command: type = " + str(command) + ", hybrid = " + str(hybrid_id) + ", chip = " + str(chip_id)
 
@@ -134,7 +135,7 @@ def SetParameterI2C(parameter_name, data):
 		write_data = ShiftDataToMask(cbc2_map[parameter_name].mask, data)
 		use_mask = 1
 
-	SendCommand_I2C(2, 0, 0, use_mask, cbc2_map[parameter_name].page, write, cbc2_map[parameter_name].reg_address, write_data)
+	SendCommand_I2C(2, 0, 0, use_mask, cbc2_map[parameter_name].page, write, cbc2_map[parameter_name].reg_address, write_data, 0)
 	sleep(0.5)
 
 def CBC_Config():
@@ -150,7 +151,7 @@ def CBC_Config():
 	i_start = 32	# 32
 	i_finish = 64	# 64
 	for i in range(i_start, i_finish):
-		SendCommand_I2C(2, 0, 0, 0, 0, 0, i, 255)
+		SendCommand_I2C(2, 0, 0, 0, 0, 0, i, 255, 0)
 	sleep(2)
 
 def CBC_ConfigTXT():	
@@ -163,7 +164,7 @@ def CBC_ConfigTXT():
 
 	#for i in range(0, cbc_config.shape[0]): # including offset
 	for i in range(0, 52): # excluding offset
-		SendCommand_I2C(2, 0, 0, use_mask, int(cbc_config[i][1],0), write, int(cbc_config[i][2],0), int(cbc_config[i][4],0))
+		SendCommand_I2C(2, 0, 0, use_mask, int(cbc_config[i][1],0), write, int(cbc_config[i][2],0), int(cbc_config[i][4],0), 0)
 	sleep(2)
 
 ###################################################################################################
@@ -300,6 +301,7 @@ def I2CTester():
 	read = 1
 	#register = 2
 	#data = 7
+	ReadBack = 0
 	################
 	
 	ReadStatus("Before I2C Configuration")
@@ -311,17 +313,17 @@ def I2CTester():
        #                       i2c_command , hybrid_id ,  chip_id, use_mask, page , read , register_address , data;
 
 	for i in range(0, num_i2c_registersPage1):
-		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        1,    10)	
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        1,    10, ReadBack)	
 	for i in range(0, num_i2c_registersPage2):
-		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
+		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10, ReadBack)
 	for i in range(1, num_i2c_registersPage1):
-		SendCommand_I2C(          2,         0,       0, use_mask,    0, write,       i,    5)
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, write,       i,    5, ReadBack)
 	for i in range(1, num_i2c_registersPage2):
-		SendCommand_I2C(          2,         0,       15, use_mask,    1, write,       i,    7)
+		SendCommand_I2C(          2,         0,       15, use_mask,    1, write,       i,    7, ReadBack)
 	for i in range(0, num_i2c_registersPage1):
-		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10, ReadBack)
 	for i in range(0, num_i2c_registersPage2):
-		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
+		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10, ReadBack)
 	
 	sleep(1)
 
@@ -356,7 +358,6 @@ sleep(1)
  
 # to test CBC test pulse injection
 ReadoutTester()
-
 
 # set of commands one may need but not used in FastTester
 #SendCommand_CTRL("fast_orbit_reset")
