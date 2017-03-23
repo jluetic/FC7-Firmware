@@ -71,7 +71,9 @@ architecture rtl of ipbus_decoder_cnfg is
     constant FAST_BLOCK_SCG_FSG_SOURCE_SEL                       : integer := convert_address(x"2_002",reg_type);
     constant FAST_BLOCK_SCG_FSG_SOURCE_OFFSET                    : integer := 0;
     constant FAST_BLOCK_SCG_FSG_SOURCE_WIDTH                     : integer := 4;
-    constant FAST_BLOCK_SCG_FSG_MASK_SEL                         : integer := convert_address(x"2_003",reg_type); 
+    constant FAST_BLOCK_SCG_FSG_MASK_SEL                         : integer := convert_address(x"2_003",reg_type);
+    constant FAST_BLOCK_DELAY_AFTER_FAST_RESET_SEL               : integer := convert_address(x"2_004",reg_type); 
+    constant FAST_BLOCK_DELAY_AFTER_TEST_PULSE_SEL               : integer := convert_address(x"2_005",reg_type); 
     --====================================--   
     
     --====================================--
@@ -126,6 +128,8 @@ begin
 		regs(FAST_BLOCK_SCG_FSG_CYCLE_FREQUENCY_SEL) <= x"00000001";
 		regs(FAST_BLOCK_SCG_FSG_SOURCE_SEL)(FAST_BLOCK_SCG_FSG_SOURCE_OFFSET + FAST_BLOCK_SCG_FSG_SOURCE_WIDTH -1 downto FAST_BLOCK_SCG_FSG_SOURCE_OFFSET) <= x"1";
 		regs(FAST_BLOCK_SCG_FSG_MASK_SEL) <= (others => '0');
+		regs(FAST_BLOCK_DELAY_AFTER_FAST_RESET_SEL) <= x"00000032";
+		regs(FAST_BLOCK_DELAY_AFTER_TEST_PULSE_SEL) <= x"000000c8";
 		
 		regs(COMMAND_BLOCK_I2C_WRITE_MASK_SEL)(COMMAND_BLOCK_I2C_WRITE_MASK_OFFSET + COMMAND_BLOCK_I2C_WRITE_MASK_WIDTH -1 downto COMMAND_BLOCK_I2C_WRITE_MASK_OFFSET) <= x"FF";		
 		
@@ -156,6 +160,8 @@ begin
 	cnfg_fastblock_o.triggers_to_accept <= to_integer(unsigned(regs(FAST_BLOCK_SCG_FSG_NCYCLE_SEL)));
 	cnfg_fastblock_o.user_trigger_frequency <= to_integer(unsigned(regs(FAST_BLOCK_SCG_FSG_CYCLE_FREQUENCY_SEL)));
 	cnfg_fastblock_o.stubs_mask <= regs(FAST_BLOCK_SCG_FSG_MASK_SEL);
+	cnfg_fastblock_o.delay_after_fast_reset <= to_integer(unsigned(regs(FAST_BLOCK_DELAY_AFTER_FAST_RESET_SEL)));
+	cnfg_fastblock_o.delay_after_test_pulse <= to_integer(unsigned(regs(FAST_BLOCK_DELAY_AFTER_TEST_PULSE_SEL)));
 	
 	cnfg_command_block_o.i2c_mask <= regs(COMMAND_BLOCK_I2C_WRITE_MASK_SEL)(COMMAND_BLOCK_I2C_WRITE_MASK_OFFSET + COMMAND_BLOCK_I2C_WRITE_MASK_WIDTH -1 downto COMMAND_BLOCK_I2C_WRITE_MASK_OFFSET);
 

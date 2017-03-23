@@ -44,14 +44,16 @@ begin
              triggered_data_frame_o => triggered_data_frame(I)   
         );  
     end generate CBCs;
+    
+    trig_data_to_hb_o <= triggered_data_frame(0);
 
     -- == Sending triggered data to the hybrid block ==--
-    allCBC_readout : entity work.triggered_data_all_CBCs
-    port map(
-        clk40 => clk40,
-        reset_i => reset_i,
-        triggered_data_frame_r_array_i => triggered_data_frame,
-        trig_data_to_hb_o => trig_data_to_hb_o
-    );
+--    allCBC_readout : entity work.triggered_data_all_CBCs
+--    port map(
+--        clk40 => clk40,
+--        reset_i => reset_i,
+--        triggered_data_frame_r_array_i => triggered_data_frame,
+--        trig_data_to_hb_o => trig_data_to_hb_o
+--    );
 
 end rtl;

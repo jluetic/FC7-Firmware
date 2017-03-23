@@ -223,6 +223,10 @@ package user_package is
       user_trigger_frequency: integer range 1 to MAX_USER_TRIGGER_FREQUENCY;
       -- stubs mask to get coincidence
       stubs_mask            : std_logic_vector(31 downto 0);
+      -- for test pulse: delay after fast reset
+      delay_after_fast_reset : natural;
+      -- for test pulse: delay after test pulse
+      delay_after_test_pulse : natural;
     end record;    
     -- Control Bus From Command Processor to Fast Command Block
     type ctrl_fastblock_type is

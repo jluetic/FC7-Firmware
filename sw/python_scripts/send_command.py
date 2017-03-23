@@ -3,6 +3,7 @@ import sys
 import os
 from ErrorHandler import *
 from time import sleep
+import numpy as np
 fc7AddrTable = AddressTable("./fc7Addr.dat")
 fc7ErrorHandler = ErrorHandler()
 ########################################
@@ -78,11 +79,127 @@ def Configure_Fast(triggers_to_accept, user_frequency, source, stubs_mask):
   SendCommand_CTRL("load_config")
   sleep(1)
 
+def Configure_TestPulse(delay_after_fast_reset, delay_after_test_pulse):
+  fc7.write("cnfg_fast_delay_after_fast_reset", delay_after_fast_reset)
+  fc7.write("cnfg_fast_delay_after_test_pulse", delay_after_test_pulse)
+  SendCommand_CTRL("load_config")
+  sleep(1)
+
 # Configure I2C
 def Configure_I2C(mask):
   fc7.write("cnfg_command_i2c", fc7AddrTable.getItem("cnfg_command_i2c_mask").shiftDataToMask(mask))
   SendCommand_CTRL("reset_i2c")
   SendCommand_CTRL("reset_i2c_fifos")
+
+###################################################################################################
+# CBC Related Methods   									  #
+###################################################################################################
+# data needs to be shifted if the mask is not from zero
+def ShiftDataToMask(mask, data):	
+	shiftingMask = mask
+	bitShiftRequired = 0
+	while (shiftingMask & 0x1) == 0:
+	    shiftingMask >>= 1
+	    bitShiftRequired += 1
+	return (data & 0xff) << bitShiftRequired
+
+# class used for setting the map of different CBC parameters
+class Parameter():
+	def __init__(self, page_i, reg_address_str, mask_str):
+		self.page = page_i-1
+      		self.reg_address = int(reg_address_str,0)
+      		self.mask = int(mask_str,16)
+
+# writing parameter to all cbc
+def SetParameterI2C(parameter_name, data):	
+	# 0 - write, 1 - read
+	write = 0
+	read = 1
+	cbc2_map = {}
+
+	# map of needed parameters
+	cbc2_map["trigger_latency"] = Parameter(1, "0x01", "FF")
+	cbc2_map["hit_detect"] = Parameter(1, "0x02", "60")
+	cbc2_map["vcth"] = Parameter(1,"0x0C", "FF")
+	cbc2_map["test_pulse_potentiometer"] = Parameter(1,"0x0D", "FF")
+	cbc2_map["test_pulse_delay_select"] = Parameter(1,"0x0E", "F8") # LSB00000MSB - minimal, LSB11001MSB - maximal
+	cbc2_map["select_channel_group"] = Parameter(1,"0x0E", "07") # LSB 000 MSB
+	cbc2_map["test_pulse_control"] = Parameter(1,"0x0F", "C0") # 7 - polarity (1 = positive edge); 6 - enable test pulse
+	cbc2_map["mask_channels_8_1"] = Parameter(1,"0x20", "FF") 
+
+	write_data = data
+	use_mask = 0
+	if cbc2_map[parameter_name].mask != 255:
+		fc7.write("cnfg_command_i2c_mask", cbc2_map[parameter_name].mask)
+		write_data = ShiftDataToMask(cbc2_map[parameter_name].mask, data)
+		use_mask = 1
+		sleep(0.5)
+
+	SendCommand_I2C(2, 0, 0, use_mask, cbc2_map[parameter_name].page, write, cbc2_map[parameter_name].reg_address, write_data)
+
+def CBC_Config():
+	SetParameterI2C("trigger_latency", 195)
+	SetParameterI2C("hit_detect", 1) # mode = single, enable = on
+	SetParameterI2C("vcth", 127) #default
+	SetParameterI2C("test_pulse_potentiometer", 0) # default 1.1V
+	SetParameterI2C("test_pulse_delay_select", 24) # 11000
+	SetParameterI2C("select_channel_group", 0)
+	SetParameterI2C("test_pulse_control", 1) # polarity negative, test pulse enabled
+	
+	# unmask all channels
+	i_start = 32	# 32
+	i_finish = 64	# 64
+	for i in range(i_start, i_finish):
+		SendCommand_I2C(2, 0, 0, 0, 0, 0, i, 255)
+	sleep(2)
+
+def CBC_ConfigTXT():	
+	# 0 - write, 1 - read
+	write = 0
+	read = 1
+
+	use_mask = 0
+	cbc_config = np.genfromtxt('Cbc2_default_hole.txt', skiprows=2, dtype='str')
+
+	#for i in range(0, cbc_config.shape[0]): # including offset
+	for i in range(0, 52): # excluding offset
+		SendCommand_I2C(2, 0, 0, use_mask, int(cbc_config[i][1],0), write, int(cbc_config[i][2],0), int(cbc_config[i][4],0))
+	sleep(2)
+
+###################################################################################################
+
+# tests test pulse request and temporary ipbus data readout
+def TempReadTriggeredData():
+	hybrid1_general = fc7.read("hybrid1_general")
+	lat_err = DataFromMask(hybrid1_general, "hybrid1_general_lat_err")
+	overflow = DataFromMask(hybrid1_general, "hybrid1_general_overflow") 
+	pipe_address = DataFromMask(hybrid1_general, "hybrid1_general_pipe_address") 
+	latency = DataFromMask(hybrid1_general, "hybrid1_general_latency") 
+	trigger_counter = DataFromMask(hybrid1_general, "hybrid1_general_trigger_counter")
+
+	temp_channel_data = []
+	for i in range(1,9):
+		temp_channel_data.append(fc7.read(("hybrid1_channels_"+str(i))))
+
+        full_channel_data = 0
+	for i in range(0,8):
+		full_channel_data = full_channel_data + temp_channel_data[i]*((2**32)**i)
+	
+	# now full_channel_data_str[0] = ch1
+	full_channel_data_str = format(full_channel_data, '0254b')
+
+	print "======================================================================================================"
+	print "Triggered Data:"
+	print "   -> Latency Error:	", lat_err
+	print "   -> Overflow:	", overflow
+	print "   -> Pipe Address:	", pipe_address
+	print "   -> Latency Counter:", latency
+	print "   -> Number of triggers:", trigger_counter
+	for i in range(0,31):
+		print '   | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s |' % (1+8*i, full_channel_data_str[0+8*i], 2+8*i, full_channel_data_str[1+8*i], 3+8*i, full_channel_data_str[2+8*i], 4+8*i, full_channel_data_str[3+8*i], 5+8*i, full_channel_data_str[4+8*i], 6+8*i, full_channel_data_str[5+8*i], 7+8*i, full_channel_data_str[6+8*i], 8+8*i, full_channel_data_str[7+8*i])
+	i = 31
+	print '   | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s |' % (1+8*i, full_channel_data_str[0+8*i], 2+8*i, full_channel_data_str[1+8*i], 3+8*i, full_channel_data_str[2+8*i], 4+8*i, full_channel_data_str[3+8*i], 5+8*i, full_channel_data_str[4+8*i], 6+8*i, full_channel_data_str[5+8*i])  
+	print "======================================================================================================"
 
 def ReadStatus(name = "Current Status"):
   print "============================"
@@ -149,7 +266,7 @@ def FastTester():
 	# trigger_source: 1 - L1, 2 - Stubs Coincidence, 3 - User Frequency
 	trigger_source = 3
 	# triggers_to_accept: 0 - continious triggering, otherwise sends neeeded amount and turns off
-	triggers_to_accept = 0
+	triggers_to_accept = 10
 	# trigger_user_frequency: in kHz 1 to 1000.
 	trigger_user_frequency = 3
 	# trigger_stubs_mask: can set a stubs coincidence, 5 means that stubs from hybrids id=2 and id=0 are required: 1b'101
@@ -193,24 +310,37 @@ def I2CTester():
 	num_i2c_registersPage2 = 2
        #                       i2c_command , hybrid_id ,  chip_id, use_mask, page , read , register_address , data;
 
-	#for i in range(0, num_i2c_registersPage1):
-	SendCommand_I2C(          0,         0,       0, use_mask,    0, read,        1,    10)	
-	#for i in range(0, num_i2c_registersPage2):
-	#	SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
-	#for i in range(1, num_i2c_registersPage1):
-	#	SendCommand_I2C(          2,         0,       0, use_mask,    0, write,       i,    5)
-	#for i in range(1, num_i2c_registersPage2):
-	#	SendCommand_I2C(          2,         0,       15, use_mask,    1, write,       i,    7)
-	#for i in range(0, num_i2c_registersPage1):
-	#	SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
-	#for i in range(0, num_i2c_registersPage2):
-	#	SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
+	for i in range(0, num_i2c_registersPage1):
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        1,    10)	
+	for i in range(0, num_i2c_registersPage2):
+		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
+	for i in range(1, num_i2c_registersPage1):
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, write,       i,    5)
+	for i in range(1, num_i2c_registersPage2):
+		SendCommand_I2C(          2,         0,       15, use_mask,    1, write,       i,    7)
+	for i in range(0, num_i2c_registersPage1):
+		SendCommand_I2C(          2,         0,       0, use_mask,    0, read,        i,    10)
+	for i in range(0, num_i2c_registersPage2):
+		SendCommand_I2C(          2,         0,       0, use_mask,    1, read,        i,    10)
 	
 	sleep(1)
 
 	ReadStatus("After Send Command")
 	ReadChipData()
-	ReadStatus("After Read Reply")	
+	ReadStatus("After Read Reply")
+
+# test Temp CBC2 Readout
+def ReadoutTester():
+	delay_after_fast_reset = 50
+	delay_after_test_pulse = 200
+	Configure_TestPulse(delay_after_fast_reset, delay_after_test_pulse)
+	CBC_ConfigTXT()
+	SetParameterI2C("select_channel_group", 0)
+	
+	sleep(1)
+	SendCommand_CTRL("fast_test_pulse")
+	sleep(0.5)
+	TempReadTriggeredData()
 
 ####################
 ## Program Running #
@@ -219,10 +349,14 @@ SendCommand_CTRL("global_reset")
 sleep(1)
 
 # to test I2C Commands (see method definition)
-I2CTester()
+#I2CTester()
 
-# to test Fast Command Block 
+# to test Fast Command Block
 #FastTester()
+ 
+# to test CBC test pulse injection
+ReadoutTester()
+
 
 # set of commands one may need but not used in FastTester
 #SendCommand_CTRL("fast_orbit_reset")
