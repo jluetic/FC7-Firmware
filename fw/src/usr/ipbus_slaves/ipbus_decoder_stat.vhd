@@ -54,15 +54,29 @@ architecture rtl of ipbus_decoder_stat is
     --====================================--
     -- Commond Error from All Blocks  
     --====================================--
-    constant GENERAL_STATUS_SEL                          : integer := convert_address(x"0_001",reg_type);
-    --====================================--
     constant GENERAL_STATUS_ERROR_SEL                    : integer := convert_address(x"0_001",reg_type);
+    --====================================--
     constant GENERAL_STATUS_ERROR_BLOCKID_OFFSET         : integer := 0;
     constant GENERAL_STATUS_ERROR_BLOCKID_WIDTH          : integer := 4;
     constant GENERAL_STATUS_ERROR_CODE_OFFSET            : integer := 4;
     constant GENERAL_STATUS_ERROR_CODE_WIDTH             : integer := 8;
-    --====================================-- 
+    --====================================--
     
+    --====================================--
+    -- Firmware Info
+    --====================================--
+    constant FIRMWARE_INFO_SEL                           : integer := convert_address(x"0_002",reg_type);
+    --====================================--
+    constant FIRMWARE_INFO_IMPLEMENTATION_OFFSET         : integer := 0;
+    constant FIRMWARE_INFO_IMPLEMENTATION_WIDTH          : integer := 4;
+    constant FIRMWARE_INFO_CBC_VERSION_OFFSET            : integer := 4;
+    constant FIRMWARE_INFO_CBC_VERSION_WIDTH             : integer := 4;
+    constant FIRMWARE_INFO_NUM_HYBRIDS_OFFSET            : integer := 8;
+    constant FIRMWARE_INFO_NUM_HYBRIDS_WIDTH             : integer := 8;
+    constant FIRMWARE_INFO_NUM_CHIPS_OFFSET              : integer := 16;
+    constant FIRMWARE_INFO_NUM_CHIPS_WIDTH               : integer := 8;
+    --====================================--
+        
     --====================================--
     -- Command Processor Block Registers  
     --====================================--
@@ -193,6 +207,12 @@ begin
     -- general status
 	regs(GENERAL_STATUS_ERROR_SEL)((GENERAL_STATUS_ERROR_BLOCKID_OFFSET + GENERAL_STATUS_ERROR_BLOCKID_WIDTH-1) downto GENERAL_STATUS_ERROR_BLOCKID_OFFSET) <= status_error_block_id;
 	regs(GENERAL_STATUS_ERROR_SEL)((GENERAL_STATUS_ERROR_CODE_OFFSET + GENERAL_STATUS_ERROR_CODE_WIDTH-1) downto GENERAL_STATUS_ERROR_CODE_OFFSET) <= status_error_code;
+	
+	-- firmware info
+	regs(FIRMWARE_INFO_SEL)((FIRMWARE_INFO_IMPLEMENTATION_WIDTH+FIRMWARE_INFO_IMPLEMENTATION_OFFSET-1) downto FIRMWARE_INFO_IMPLEMENTATION_OFFSET) <= std_logic_vector(to_unsigned(implementation_type'pos(IMPLEMENTATION),FIRMWARE_INFO_IMPLEMENTATION_WIDTH));
+    regs(FIRMWARE_INFO_SEL)((FIRMWARE_INFO_CBC_VERSION_WIDTH+FIRMWARE_INFO_CBC_VERSION_OFFSET-1) downto FIRMWARE_INFO_CBC_VERSION_OFFSET) <= std_logic_vector(to_unsigned(CBC_VERSION,FIRMWARE_INFO_CBC_VERSION_WIDTH));
+	regs(FIRMWARE_INFO_SEL)((FIRMWARE_INFO_NUM_HYBRIDS_WIDTH+FIRMWARE_INFO_NUM_HYBRIDS_OFFSET-1) downto FIRMWARE_INFO_NUM_HYBRIDS_OFFSET) <= std_logic_vector(to_unsigned(NUM_HYBRIDS,FIRMWARE_INFO_NUM_HYBRIDS_WIDTH));
+	regs(FIRMWARE_INFO_SEL)((FIRMWARE_INFO_NUM_CHIPS_WIDTH+FIRMWARE_INFO_NUM_CHIPS_OFFSET-1) downto FIRMWARE_INFO_NUM_CHIPS_OFFSET) <= std_logic_vector(to_unsigned(NUM_CHIPS,FIRMWARE_INFO_NUM_CHIPS_WIDTH));
 	
 	-- command block status
 	regs(COMMAND_BLOCK_I2C_MASTER_SEL)((COMMAND_BLOCK_I2C_MASTER_FSM_STATUS_OFFSET + COMMAND_BLOCK_I2C_MASTER_FSM_STATUS_WIDTH-1) downto COMMAND_BLOCK_I2C_MASTER_FSM_STATUS_OFFSET) <= stat_command_block_i.status_i2c_master_fsm;
