@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="sim_fast_command_core_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="sim_fast_command_core" />
+            <top_module name="user_package" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="42622058333333fs"></ZoomStartTime>
+      <ZoomEndTime time="42635278333334fs"></ZoomEndTime>
+      <Cursor1Time time="42627575000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="175"></NameColumnWidth>
+      <ValueColumnWidth column_width="146"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="10" />
+   <wvobject type="logic" fp_name="/sim_fast_command_core/clk_40MHz">
+      <obj_property name="ElementShortName">clk_40MHz</obj_property>
+      <obj_property name="ObjectShortName">clk_40MHz</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/l1_trigger_in">
+      <obj_property name="ElementShortName">l1_trigger_in</obj_property>
+      <obj_property name="ObjectShortName">l1_trigger_in</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/user_trigger">
+      <obj_property name="ElementShortName">user_trigger</obj_property>
+      <obj_property name="ObjectShortName">user_trigger</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/ctrl_fastblock_i">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">ctrl_fastblock_i</obj_property>
+      <obj_property name="ObjectShortName">ctrl_fastblock_i</obj_property>
+      <obj_property name="label">CTRL Commands</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/cnfg_fastblock_i">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">cnfg_fastblock_i</obj_property>
+      <obj_property name="ObjectShortName">cnfg_fastblock_i</obj_property>
+      <obj_property name="label">CNFG Input</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/stat_fastblock_o.error_code">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">.error_code[7:0]</obj_property>
+      <obj_property name="ObjectShortName">.error_code[7:0]</obj_property>
+      <obj_property name="label">ERROR</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/status_source">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">status_source[3:0]</obj_property>
+      <obj_property name="ObjectShortName">status_source[3:0]</obj_property>
+      <obj_property name="label">Trigger Source</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/status_state">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">status_state</obj_property>
+      <obj_property name="ObjectShortName">status_state</obj_property>
+      <obj_property name="label">Trigger State</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/sim_fast_command_core/uut_fast_command_block/configured">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">configured</obj_property>
+      <obj_property name="ObjectShortName">configured</obj_property>
+      <obj_property name="label">Trigger Configured</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/sim_fast_command_core/uut_fast_command_block/fast_signal">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">fast_signal</obj_property>
+      <obj_property name="ObjectShortName">fast_signal</obj_property>
+      <obj_property name="label">FAST SIGNAL OUT</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+</wave_config>

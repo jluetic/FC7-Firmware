@@ -1,0 +1,65 @@
+*
+user_ipb_stat_regs			40000000    ffffffff     1     1
+
+ipb_daq_system_cnfg			40010000    ffffffff     1     1
+   cnfg_command_i2c			40011001    ffffffff	 1     1	
+   cnfg_command_i2c_mask		40011001    000000ff	 1     1
+   cnfg_fast_triggers_to_accept 	40012000    ffffffff	 1     1
+   cnfg_fast_user_frequency     	40012001    ffffffff	 1     1
+   cnfg_fast_source_full		40012002    ffffffff	 1     1	
+   cnfg_fast_source             	40012002    0000000f	 1     1
+   cnfg_fast_mask               	40012003    ffffffff	 1     1
+   cnfg_fast_delay_after_fast_reset	40012004    ffffffff	 1     1
+   cnfg_fast_delay_after_test_pulse	40012005    ffffffff	 1     1
+  
+ipb_daq_system_ctrl			40020000    ffffffff     1     1
+   ctrl_command_global		        40021000    ffffffff     1     1
+   ctrl_command_global_reset	        40021000    00000001     1     1   
+   ctrl_command_i2c			40021001    ffffffff	 1     1
+   ctrl_command_i2c_reset		40021001    00000001     1     1
+   ctrl_command_i2c_reset_fifos		40021001    00000004     1     1
+   ctrl_command_i2c_command_fifo	40021002    ffffffff	 1     1
+     ctrl_command_i2c_command_type	40021002    f0000000	 1     1
+     ctrl_command_i2c_command_hybrid_id	40021002    0f000000	 1     1
+     ctrl_command_i2c_command_chip_id	40021002    00f00000	 1     1
+     ctrl_command_i2c_command_readback	40021002    00080000	 1     1
+     ctrl_command_i2c_command_mask	40021002    00040000	 1     1
+     ctrl_command_i2c_command_page	40021002    00020000	 1     1
+     ctrl_command_i2c_command_read	40021002    00010000	 1     1
+     ctrl_command_i2c_command_register	40021002    0000ff00	 1     1
+     ctrl_command_i2c_command_data	40021002    000000ff	 1     1
+   ctrl_command_i2c_reply_fifo          40021003    ffffffff     1     0
+     ctrl_command_i2c_reply_type	40021003    f0000000	 1     0
+     ctrl_command_i2c_reply_hybrid_id	40021003    0f000000	 1     0
+     ctrl_command_i2c_reply_chip_id	40021003    00f00000	 1     0    
+     ctrl_command_i2c_reply_register	40021003    0000ff00	 1     0
+     ctrl_command_i2c_reply_data	40021003    000000ff	 1     0 
+   ctrl_fast		        	40022000    ffffffff     1     1
+   ctrl_fast_reset			40022000    00000001     1     1
+   ctrl_fast_start			40022000    00000002     1     1
+   ctrl_fast_stop			40022000    00000004     1     1
+   ctrl_fast_load_config		40022000    00000008     1     1
+   ctrl_fast_signal_fast_reset  	40022000    00010000     1     1
+   ctrl_fast_signal_test_pulse  	40022000    00020000     1     1
+   ctrl_fast_signal_trigger     	40022000    00040000     1     1
+   ctrl_fast_signal_orbit_reset 	40022000    00080000     1     1
+   ctrl_fast_signal_i2c_refresh 	40022000    00100000     1     1    
+
+ipb_daq_system_stat			40030000    ffffffff     1     0
+   stat_error_block_id			40030001    0000000f     1     0
+   stat_error_code			40030001    00000ff0     1     0   
+   stat_command_i2c_fsm			40031001    0000000f	 1     0
+   stat_command_i2c_fifo_commands_empty	40031002    00000001     1     0
+   stat_command_i2c_fifo_commands_full	40031002    00000002     1     0
+   stat_command_i2c_fifo_replies_empty	40031003    00000001     1     0
+   stat_command_i2c_fifo_replies_full	40031003    00000002     1     0
+   stat_command_i2c_nreplies_present    40031004    ffffffff     1     0
+   stat_fast_fsm			40032000    000000ff	 1     0
+   stat_fast_fsm_configured 		40032000    00000020     1     0
+   stat_fast_fsm_state			40032000    00000010     1     0
+   stat_fast_fsm_source     		40032000    0000000f     1     0
+   stat_rate_ipb			4003f000    ffffffff     1     0
+   stat_rate_40mhz	        	4003f001    ffffffff	 1     0
+   stat_rate_trigger			4003f002    ffffffff     1     0
+   
+

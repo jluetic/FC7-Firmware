@@ -1,1 +1,6 @@
 fw/prj/fpga_fc7_daq_firmware/*
+fw/src/usr/command_processor/i2c_replies_fifo
+fw/src/usr/command_processor/i2c_commands_fifo
+fw/src/usr/phy/mmcm
+fw/src/usr/phy/CBC3Emulator/cbc3_pipeline
+.Xil

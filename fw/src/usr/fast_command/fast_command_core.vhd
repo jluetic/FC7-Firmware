@@ -1,46 +1,378 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
+-- Engineer: Mykyta Haranko
 -- Create Date: 11/08/2016 12:52:31 PM
--- Design Name: 
--- Module Name: fast_command_core - rtl
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
 ----------------------------------------------------------------------------------
 
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use ieee.std_logic_unsigned.all;
+use work.user_package.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library UNISIM;
+use UNISIM.VComponents.all;
 
 entity fast_command_core is
---  Port ( );
+  Port (
+    clk_40MHz             : in std_logic;
+    l1_trigger_in         : in std_logic;
+    reset                 : in std_logic;
+    -- control buses from Command Processor Block
+    ctrl_fastblock_i      : in ctrl_fastblock_type;
+    cnfg_fastblock_i      : in cnfg_fastblock_type;
+    -- stubs from hybrids
+    in_stubs              : in std_logic_vector(NUM_HYBRIDS downto 1);
+    -- fast block status
+    stat_fastblock_o      : out stat_fastblock_type;
+    -- output fast signals to phy_block
+    fast_signal           : out cmd_fastbus
+  );
 end fast_command_core;
 
 architecture rtl of fast_command_core is
 
-    signal dummy_signal             : std_logic := '0';
+    signal reset_int                : std_logic;
 
+    -- masks
+    signal ones_mask                : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
+    
+    -- test pulse sending logics
+    signal test_pulse_counter       : natural := 0;
+    signal test_pulse_counter_started : std_logic := '0';
+    signal test_pulse_fast_reset     : std_logic := '0';
+    signal test_pulse_l1a           : std_logic := '0';
+    signal DELAY_AFTER_FAST_RESET   : natural := 50;
+    signal DELAY_AFTER_TEST_PULSE   : natural := 200;
+    
+    -- trigger fsm related
+    type trigger_state_type is (Idle, Running);
+    signal trigger_state            : trigger_state_type := Idle;
+    signal trigger_start_loc        : std_logic := '0';
+    signal trigger_stop_loc         : std_logic := '0';
+    signal no_triggers              : std_logic := '0';
+    signal ipb_reset                : std_logic := '0';
+    
+    -- trigger signals 
+    signal trigger_i                : std_logic;
+    signal trigger_o                : std_logic;
+    signal stubs_user_muxed         : std_logic;
+    signal clock_enable             : std_logic := '0';
+    signal user_trigger             : std_logic;
+    signal stubs_trigger            : std_logic;
+    
+    -- trigger configs
+    signal trigger_source           : std_logic_vector(3 downto 0) := x"1";    
+    signal hybrid_mask_inv          : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
+    signal user_trigger_frequency   : integer range 1 to MAX_USER_TRIGGER_FREQUENCY := 1;    
+    signal triggers_to_accept       : integer range 0 to MAX_NTRIGGERS_TO_ACCEPT := 0;
+    
+    -- temporary configuration signals
+    signal temp_trigger_source           : std_logic_vector(3 downto 0) := x"1";
+    signal temp_hybrid_mask_inv          : std_logic_vector(NUM_HYBRIDS downto 1) := (others => '1');
+    signal temp_user_trigger_frequency   : integer range 1 to MAX_USER_TRIGGER_FREQUENCY := 1;    
+    signal temp_triggers_to_accept       : integer range 0 to MAX_NTRIGGERS_TO_ACCEPT := 0;
+    
+    -- accept N triggers related signals
+    signal counter                  : std_logic_vector(31 downto 0) := (others => '0');
+    signal reset_counter            : std_logic := '0';
+    
+    -- trigger checker counter
+    signal checked                  : std_logic := '0';
+    signal trigger_checker          : std_logic_vector(31 downto 0) := (others => '0');
+    
+    -- status signals
+    signal status_source            : std_logic_vector(3 downto 0) := x"0";
+    -- 1 - running, 0 - idle
+    signal status_state             : std_logic := '0';
+    signal configured               : std_logic := '0';
+    
 begin
 
-    dummy_signal <= '1';
+    -- combined reset signal
+    reset_int <= reset or ipb_reset;
+
+    stubs_trigger <= '1' when ones_mask = (hybrid_mask_inv XOR in_stubs) else '0';
+    
+    -- status
+    stat_fastblock_o.if_configured          <= configured;
+    stat_fastblock_o.trigger_state          <= status_state;
+    stat_fastblock_o.trigger_source <= status_source;
+
+--===================================--
+clk_divider: entity work.clock_divider
+--===================================--
+port map
+(
+    i_clk           => clk_40MHz,
+    i_rst           => reset_int,
+    i_clk_frequency => user_trigger_frequency,
+    o_clk           => user_trigger
+);             
+--===================================--
+
+--===================================--
+-- BEGIN TRIGGER MUX
+--===================================--
+
+--===================================--
+MUX_Stubs_User : BUFGCTRL  
+--===================================--
+generic map (  
+  INIT_OUT     => 0,  
+  PRESELECT_I0 => FALSE,  
+  PRESELECT_I1 => FALSE)  
+port map (  
+  O       => stubs_user_muxed,  
+  CE0     => '1',  
+  CE1     => '1',  
+  I0      => stubs_trigger,  
+  I1      => user_trigger,
+  IGNORE0 => '1',  
+  IGNORE1 => '1',  
+  S0      => not trigger_source(0), -- Clock select0 input  
+  S1      => trigger_source(0) -- Clock select1 input  
+);
+--===================================--
+
+--===================================--
+MUX_Final : BUFGCTRL  
+--===================================--
+generic map (  
+  INIT_OUT     => 0,  
+  PRESELECT_I0 => FALSE,  
+  PRESELECT_I1 => FALSE)  
+port map (  
+  O       => trigger_i,  
+  CE0     => '1',  
+  CE1     => '1',  
+  I0      => l1_trigger_in,  
+  I1      => stubs_user_muxed,  
+  IGNORE0 => '1',  
+  IGNORE1 => '1',  
+  S0      => not trigger_source(1), -- Clock select0 input  
+  S1      => trigger_source(1) -- Clock select1 input  
+);
+--===================================--
+
+--===================================--
+BufGCE_Out : BUFGCE
+--===================================--
+port map (
+    I   => trigger_i,
+    O   => trigger_o,
+    CE  => clock_enable
+);
+--===================================--
+
+--===================================--
+-- END TRIGGER MUX
+--===================================--
+
+--===================================--
+-- BEGIN FAST SIGNALS
+--===================================--
+fast_signal.fast_reset <= ctrl_fastblock_i.ipb_fast_reset or reset_int or test_pulse_fast_reset;
+fast_signal.orbit_reset <= ctrl_fastblock_i.ipb_orbit_reset or reset_int;
+fast_signal.trigger <= ctrl_fastblock_i.ipb_trigger or trigger_o or test_pulse_l1a;
+--fast_signal.test_pulse_trigger <= ctrl_fastblock_i.ipb_test_pulse;
+fast_signal.i2c_refresh <= ctrl_fastblock_i.ipb_i2c_refresh;
+--===================================--
+-- END FAST SIGNALS
+--===================================--
+
+--===================================--
+-- Test Pulse Sending Logics
+--===================================--
+process (reset_int, clk_40MHz)
+begin
+    if reset_int = '1' then
+        fast_signal.test_pulse_trigger <= '0';
+        test_pulse_fast_reset <= '0';
+        test_pulse_l1a <= '0';
+        test_pulse_counter <= 0;
+        test_pulse_counter_started <= '0';
+    elsif rising_edge(clk_40MHz) then
+        fast_signal.test_pulse_trigger <= '0';
+        test_pulse_fast_reset <= '0';
+        test_pulse_l1a <= '0';
+        
+        if ctrl_fastblock_i.ipb_test_pulse = '1' then
+            test_pulse_counter <= 1;
+            test_pulse_counter_started <= '1';
+            test_pulse_fast_reset <= '1';
+        elsif test_pulse_counter_started = '1' then
+            if test_pulse_counter = DELAY_AFTER_FAST_RESET then
+                fast_signal.test_pulse_trigger <= '1';
+            end if;
+            if test_pulse_counter = DELAY_AFTER_FAST_RESET+DELAY_AFTER_TEST_PULSE then
+                test_pulse_l1a <= '1';
+                test_pulse_counter_started <= '0';
+                test_pulse_counter <= 0;
+            end if;
+            test_pulse_counter <= test_pulse_counter + 1;
+        end if;
+    end if;
+end process;
+--===================================--
+
+COMMAND_HANDLER: process (reset_int, clk_40MHz)
+begin
+    if reset_int = '1' then
+        ipb_reset <= '0';
+        trigger_start_loc <= '0';
+        trigger_stop_loc <= '0';
+        
+        temp_trigger_source <= x"1";
+        temp_hybrid_mask_inv <= (others => '1');
+        temp_user_trigger_frequency <= 1;
+        temp_triggers_to_accept <= 0;
+        configured <= '0';
+        
+        DELAY_AFTER_FAST_RESET <= 50;
+        DELAY_AFTER_TEST_PULSE <= 200;
+        
+    elsif rising_edge(clk_40MHz) then
+        ipb_reset <= '0';
+        trigger_start_loc <= '0';
+        trigger_stop_loc <= '0';
+        if trigger_state = Idle then            
+            trigger_source <= temp_trigger_source;
+            hybrid_mask_inv <= temp_hybrid_mask_inv;
+            user_trigger_frequency <= temp_user_trigger_frequency;
+            triggers_to_accept <= temp_triggers_to_accept;
+        end if;
+        if ctrl_fastblock_i.cmd_strobe = '1' then
+            if ctrl_fastblock_i.reset = '1' then
+                ipb_reset <= '1';
+            elsif ctrl_fastblock_i.load_config = '1' then                
+                if trigger_state = Running then
+                    trigger_stop_loc <= '1';
+                end if;
+                
+                --needs to be buffered and changed after trigger was stopped
+                temp_trigger_source <= cnfg_fastblock_i.trigger_source;
+                temp_hybrid_mask_inv <= not cnfg_fastblock_i.stubs_mask(NUM_HYBRIDS-1 downto 0);
+                temp_user_trigger_frequency <= cnfg_fastblock_i.user_trigger_frequency;
+                temp_triggers_to_accept <= cnfg_fastblock_i.triggers_to_accept;
+                
+                -- can be set directly
+                DELAY_AFTER_FAST_RESET <= cnfg_fastblock_i.delay_after_fast_reset;
+                DELAY_AFTER_TEST_PULSE <= cnfg_fastblock_i.delay_after_test_pulse;           
+                
+                configured <= '1';
+            elsif ctrl_fastblock_i.start_trigger = '1' then
+                if trigger_state = Idle then
+                    trigger_start_loc <= '1';
+                end if;
+            elsif ctrl_fastblock_i.stop_trigger = '1' then
+                if trigger_state = Running then
+                    trigger_stop_loc <= '1';
+                end if;
+            end if;
+        end if;
+    end if;
+end process;
+
+SOURCE_PROCESS: process (reset_int, clk_40MHz)
+begin
+    if reset_int = '1' then
+        status_source <= x"1";
+        trigger_checker <= (others => '0');
+        no_triggers <= '0';
+        checked <= '0';
+    elsif rising_edge(clk_40MHz) then
+        if reset_counter = '1' then
+            checked <= '0';
+            trigger_checker <= (others => '0');
+        end if;
+        if checked = '0' then            
+            if trigger_state = Running then                
+                -- if no trigger for MAX_TIME_WITHOUT_TRIGGER seconds => bye bye
+                if TO_INTEGER(unsigned(trigger_checker)) >= MAX_TIME_WITHOUT_TRIGGER*CLK_FREQUENCY_HZ then
+                    if counter = x"00000000" then
+                        no_triggers <= '1';
+                    else
+                        no_triggers <= '0';
+                    end if;
+                    checked <= '1';                    
+                else
+                    no_triggers <= '0';
+                end if;
+                trigger_checker <= trigger_checker + 1;                
+            end if;            
+        end if;
+        case trigger_source is
+            -- spread L1-Trigger as trigger
+            when x"1" =>
+                status_source <= x"1";
+            -- triggers using stubs from the hybrids, could be coincidence
+            when x"2" =>
+                status_source <= x"2";
+            -- trigger with defined user frequency <= 40MHz
+            when x"3" =>
+                status_source <= x"3";
+            -- no triggers
+            when others =>
+                status_source <= x"f";
+        end case;            
+    end if;            
+end process;
+
+STATE_PROCESS: process (reset_int, clk_40MHz)
+begin
+    if reset_int = '1' then
+       trigger_state <= Idle;
+       stat_fastblock_o.error_code <= x"00";
+    elsif rising_edge(clk_40MHz) then
+        reset_counter <= '0';
+        case trigger_state is
+            -- Idle
+            when Idle =>
+                status_state <= '0';
+                clock_enable <= '0';
+                if trigger_start_loc = '1' then
+                    stat_fastblock_o.error_code <= x"00";
+                    reset_counter <= '1';
+                    trigger_state <= Running;
+                end if;    
+            -- Triggering
+            when Running =>                
+                status_state <= '1';
+                clock_enable <= '1';
+                if trigger_stop_loc = '1' then
+                    clock_enable <= '0';
+                    trigger_state <= Idle;
+                elsif no_triggers = '1' then
+                    clock_enable <= '0';
+                    -- no triggers
+                    stat_fastblock_o.error_code <= x"03";
+                    trigger_state <= Idle;
+                elsif triggers_to_accept /= 0 and TO_INTEGER(unsigned(counter))+1 > triggers_to_accept then
+                    clock_enable <= '0';
+                    trigger_state <= Idle;                
+                end if;          
+            when others =>
+                clock_enable <= '0';
+                trigger_state <= Idle;
+                -- unknown state
+                stat_fastblock_o.error_code <= x"01";             
+        end case;
+    end if;
+end process;
+
+COUNTER_PROCESS: process(reset_int, reset_counter, trigger_i)
+begin
+    if reset_int = '1' or reset_counter = '1' then
+        counter <= (others => '0');
+    elsif rising_edge(trigger_i) and trigger_state = Running then
+        counter <= counter + 1;
+    end if;
+end process;
 
 end rtl;
