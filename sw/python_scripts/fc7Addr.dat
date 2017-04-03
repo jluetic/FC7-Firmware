@@ -61,20 +61,5 @@ ipb_daq_system_stat			40030000    ffffffff     1     0
    stat_rate_ipb			4003f000    ffffffff     1     0
    stat_rate_40mhz	        	4003f001    ffffffff	 1     0
    stat_rate_trigger			4003f002    ffffffff     1     0
-
-   hybrid1_general			4003e000    ffffffff	 1     0
-   hybrid1_general_lat_err		4003e000    80000000	 1     0
-   hybrid1_general_overflow		4003e000    40000000	 1     0
-   hybrid1_general_pipe_address		4003e000    000001ff	 1     0
-   hybrid1_general_latency		4003e000    0003fe00	 1     0
-   hybrid1_general_trigger_counter	4003e000    07fc0000	 1     0
-   hybrid1_channels_1			4003e001    ffffffff     1     0
-   hybrid1_channels_2			4003e002    ffffffff     1     0
-   hybrid1_channels_3			4003e003    ffffffff     1     0
-   hybrid1_channels_4			4003e004    ffffffff     1     0
-   hybrid1_channels_5			4003e005    ffffffff     1     0
-   hybrid1_channels_6			4003e006    ffffffff     1     0
-   hybrid1_channels_7			4003e007    ffffffff     1     0
-   hybrid1_channels_8			4003e008    3fffffff     1     0
    
 

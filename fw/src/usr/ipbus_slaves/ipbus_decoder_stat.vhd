@@ -30,9 +30,7 @@ port (
         stat_fast_block_i     : in stat_fastblock_type;
         -- stat command block
         stat_command_block_i  : in stat_command_block_type;
-        test_clock_frequency  : in array_4x32bit;
-        -- temporary line while HYBRID block is not existing
-        trig_data_i         : in triggered_data_frame_r_array(0 to NUM_HYBRIDS-1)
+        test_clock_frequency  : in array_4x32bit
      );
 end ipbus_decoder_stat;
 
@@ -139,29 +137,6 @@ architecture rtl of ipbus_decoder_stat is
     --====================================--   
     
     --====================================--
-    -- Temporary data output for 1 HYBRID 
-    --====================================--
-    constant TEMP_DATA_SEL                                 : integer := convert_address(x"e_000",reg_type);
-    
-    constant TEMP_DATA_HYBRID1_GEN_SEL                     : integer := convert_address(x"e_000",reg_type);
-    constant TEMP_DATA_HYBRID1_GEN_LAT_ERR_BIT             : integer := 31;
-    constant TEMP_DATA_HYBRID1_GEN_OVERFLOW_BIT            : integer := 30;
-    constant TEMP_DATA_HYBRID1_GEN_PIPE_OFFSET             : integer := 0;
-    constant TEMP_DATA_HYBRID1_GEN_PIPE_WIDTH              : integer := 9;
-    constant TEMP_DATA_HYBRID1_GEN_LATENCY_OFFSET          : integer := 9;
-    constant TEMP_DATA_HYBRID1_GEN_LATENCY_WIDTH           : integer := 9;
-    constant TEMP_DATA_HYBRID1_GEN_TRIGGER_COUNTER_OFFSET  : integer := 18;
-    constant TEMP_DATA_HYBRID1_GEN_TRIGGER_COUNTER_WIDTH   : integer := 9;
-    constant TEMP_DATA_HYBRID1_CHANNELS1_SEL               : integer := convert_address(x"e_001",reg_type);
-    constant TEMP_DATA_HYBRID1_CHANNELS2_SEL               : integer := convert_address(x"e_002",reg_type);  
-    constant TEMP_DATA_HYBRID1_CHANNELS3_SEL               : integer := convert_address(x"e_003",reg_type);  
-    constant TEMP_DATA_HYBRID1_CHANNELS4_SEL               : integer := convert_address(x"e_004",reg_type);  
-    constant TEMP_DATA_HYBRID1_CHANNELS5_SEL               : integer := convert_address(x"e_005",reg_type);  
-    constant TEMP_DATA_HYBRID1_CHANNELS6_SEL               : integer := convert_address(x"e_006",reg_type);  
-    constant TEMP_DATA_HYBRID1_CHANNELS7_SEL               : integer := convert_address(x"e_007",reg_type);  
-    constant TEMP_DATA_HYBRID1_CHANNELS8_SEL               : integer := convert_address(x"e_008",reg_type);  
-    
-    --====================================--
     -- Output of measured clock frequencies  
     --====================================--
     constant TEST_CLOCK_SEL                           : integer := convert_address(x"f_000",stat);
@@ -232,40 +207,6 @@ begin
     regs(TEST_CLOCK_IPB_SEL) <= test_clock_frequency(0);
     regs(TEST_CLOCK_40MHZ_SEL) <= test_clock_frequency(1);
     regs(TEST_CLOCK_TRIGGER_SEL) <= test_clock_frequency(2);
-    
-    -- temp data process hybrid(0)
-    process (reset, clk)
-        constant index : natural := 0;
-    begin
-        if reset = '1' then
-            regs(TEMP_DATA_HYBRID1_GEN_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS1_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS2_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS3_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS4_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS5_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS6_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS7_SEL) <= (others => '0');
-            regs(TEMP_DATA_HYBRID1_CHANNELS8_SEL) <= (others => '0');
-        elsif rising_edge(clk) then
-            if(trig_data_i(index).start = "11") then
-                regs(TEMP_DATA_HYBRID1_GEN_SEL)(TEMP_DATA_HYBRID1_GEN_LAT_ERR_BIT) <= trig_data_i(index).latency_error;
-                regs(TEMP_DATA_HYBRID1_GEN_SEL)(TEMP_DATA_HYBRID1_GEN_OVERFLOW_BIT) <= trig_data_i(index).buffer_overflow;
-                regs(TEMP_DATA_HYBRID1_GEN_SEL)(TEMP_DATA_HYBRID1_GEN_PIPE_WIDTH+TEMP_DATA_HYBRID1_GEN_PIPE_OFFSET-1 downto TEMP_DATA_HYBRID1_GEN_PIPE_OFFSET) <= trig_data_i(index).pipe_address;
-                --regs(TEMP_DATA_HYBRID1_GEN_SEL)(TEMP_DATA_HYBRID1_GEN_LATENCY_WIDTH+TEMP_DATA_HYBRID1_GEN_LATENCY_OFFSET-1 downto TEMP_DATA_HYBRID1_GEN_LATENCY_OFFSET) <= trig_data_i(index).l1_counter;
-                regs(TEMP_DATA_HYBRID1_GEN_SEL)(TEMP_DATA_HYBRID1_GEN_TRIGGER_COUNTER_WIDTH+TEMP_DATA_HYBRID1_GEN_TRIGGER_COUNTER_OFFSET-1 downto TEMP_DATA_HYBRID1_GEN_TRIGGER_COUNTER_OFFSET) <= trig_data_i(index).l1_counter;
-                regs(TEMP_DATA_HYBRID1_CHANNELS8_SEL)(29 downto 0) <= trig_data_i(index).channels(253 downto 224);
-                regs(TEMP_DATA_HYBRID1_CHANNELS7_SEL) <= trig_data_i(index).channels(223 downto 192);
-                regs(TEMP_DATA_HYBRID1_CHANNELS6_SEL) <= trig_data_i(index).channels(191 downto 160);
-                regs(TEMP_DATA_HYBRID1_CHANNELS5_SEL) <= trig_data_i(index).channels(159 downto 128);
-                regs(TEMP_DATA_HYBRID1_CHANNELS4_SEL) <= trig_data_i(index).channels(127 downto 96);
-                regs(TEMP_DATA_HYBRID1_CHANNELS3_SEL) <= trig_data_i(index).channels(95 downto 64);
-                regs(TEMP_DATA_HYBRID1_CHANNELS2_SEL) <= trig_data_i(index).channels(63 downto 32);
-                regs(TEMP_DATA_HYBRID1_CHANNELS1_SEL) <= trig_data_i(index).channels(31 downto 0);
-                
-            end if;
-        end if;
-    end process;
     	
 ERROR_HANDLER: process(reset, clk)
 begin

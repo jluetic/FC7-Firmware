@@ -169,39 +169,6 @@ def CBC_ConfigTXT():
 
 ###################################################################################################
 
-# tests test pulse request and temporary ipbus data readout
-def TempReadTriggeredData():
-	hybrid1_general = fc7.read("hybrid1_general")
-	lat_err = DataFromMask(hybrid1_general, "hybrid1_general_lat_err")
-	overflow = DataFromMask(hybrid1_general, "hybrid1_general_overflow") 
-	pipe_address = DataFromMask(hybrid1_general, "hybrid1_general_pipe_address") 
-	latency = DataFromMask(hybrid1_general, "hybrid1_general_latency") 
-	trigger_counter = DataFromMask(hybrid1_general, "hybrid1_general_trigger_counter")
-
-	temp_channel_data = []
-	for i in range(1,9):
-		temp_channel_data.append(fc7.read(("hybrid1_channels_"+str(i))))
-
-        full_channel_data = 0
-	for i in range(0,8):
-		full_channel_data = full_channel_data + temp_channel_data[i]*((2**32)**i)
-	
-	# now full_channel_data_str[0] = ch1
-	full_channel_data_str = format(full_channel_data, '0254b')
-
-	print "======================================================================================================"
-	print "Triggered Data:"
-	print "   -> Latency Error:	", lat_err
-	print "   -> Overflow:	", overflow
-	print "   -> Pipe Address:	", pipe_address
-	print "   -> Latency Counter:", latency
-	print "   -> Number of triggers:", trigger_counter
-	for i in range(0,31):
-		print '   | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s |' % (1+8*i, full_channel_data_str[0+8*i], 2+8*i, full_channel_data_str[1+8*i], 3+8*i, full_channel_data_str[2+8*i], 4+8*i, full_channel_data_str[3+8*i], 5+8*i, full_channel_data_str[4+8*i], 6+8*i, full_channel_data_str[5+8*i], 7+8*i, full_channel_data_str[6+8*i], 8+8*i, full_channel_data_str[7+8*i])
-	i = 31
-	print '   | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s | Ch(%-3i) = %-1s |' % (1+8*i, full_channel_data_str[0+8*i], 2+8*i, full_channel_data_str[1+8*i], 3+8*i, full_channel_data_str[2+8*i], 4+8*i, full_channel_data_str[3+8*i], 5+8*i, full_channel_data_str[4+8*i], 6+8*i, full_channel_data_str[5+8*i])  
-	print "======================================================================================================"
-
 def ReadStatus(name = "Current Status"):
   print "============================"
   print name,":"
@@ -342,7 +309,7 @@ def ReadoutTester():
 	sleep(1)
 	SendCommand_CTRL("fast_test_pulse")
 	sleep(0.5)
-	TempReadTriggeredData()
+	#TempReadTriggeredData()
 
 ####################
 ## Program Running #
@@ -354,10 +321,10 @@ sleep(1)
 #I2CTester()
 
 # to test Fast Command Block
-#FastTester()
+FastTester()
  
 # to test CBC test pulse injection
-ReadoutTester()
+#ReadoutTester()
 
 # set of commands one may need but not used in FastTester
 #SendCommand_CTRL("fast_orbit_reset")

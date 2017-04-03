@@ -481,9 +481,7 @@ begin
         -- command block statuses
         stat_command_block_i  => stat_command_block,        
         -- clock frequencies tester
-        test_clock_frequency   => test_clock_frequency,
-        -- temporary line while HYBRID block is not existing
-        trig_data_i => trig_data_to_hb
+        test_clock_frequency   => test_clock_frequency
     );
     --===================================--
     
