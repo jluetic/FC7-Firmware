@@ -168,7 +168,11 @@ begin
         ipb_global_reset <= '0';
     else 		
 	
-	    regs <= (others=> (others=>'0'));
+        --   regs <= (others=> (others=>'0'));
+        regs(FAST_BLOCK_SCG_SEL) <= (others => '0');
+        regs(COMMAND_BLOCK_GLOBAL_SEL) <= (others => '0');
+        regs(COMMAND_BLOCK_I2C_CONTROL_SEL) <= (others => '0');
+        regs(COMMAND_BLOCK_I2C_COMMAND_FIFO_SEL) <= (others => '0');
 	    ipb_global_reset <= '0';
 	    ctrl_fastblock_int <= ctrl_fastblock_init0;
         ctrl_command_block_from_ipbus.i2c_reset <= '0';
